@@ -49,6 +49,8 @@ public class Worker : BackgroundService
             return;
         }
 
+        _logger.LogInformation("Received request to convert file {FileName}", message.BlobName);
+
         var inputFilePath = await _inputStorageService.DownloadBlobAsync(message.BlobName, cancellationToken);
 
         var conversionResult = await _ffMpegService.ConvertAsync(inputFilePath, message.Arguments, message.TargetExtension);
