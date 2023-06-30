@@ -37,6 +37,7 @@ steps:
       projects: 'src/**/Worker.csproj'
       arguments: '-r $(Runtime) -c Release -p:PublishReadyToRun=true -o $(Build.ArtifactStagingDirectory)'
       publishWebProjects: false
+      zipAfterPublish: false
   - task: PublishBuildArtifacts@1
     name: Pack
     inputs:
