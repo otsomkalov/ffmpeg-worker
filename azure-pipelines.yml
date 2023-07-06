@@ -12,7 +12,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  Runtime: 'linux-x64'
+  Runtime: 'alpine-x64'
 
 steps:
   - task: DotNetCoreCLI@2
