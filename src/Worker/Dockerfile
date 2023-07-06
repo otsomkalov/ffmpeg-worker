@@ -5,4 +5,6 @@ COPY . .
 RUN apk -U upgrade
 RUN apk add ffmpeg
 
+RUN chmod +x ./Worker
+
 ENTRYPOINT ["./Worker"]
