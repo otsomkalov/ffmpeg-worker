@@ -5,4 +5,4 @@ COPY . .
 RUN apk -U upgrade
 RUN apk add ffmpeg
 
-ENTRYPOINT [" Worker"]
+ENTRYPOINT ["Worker"]
