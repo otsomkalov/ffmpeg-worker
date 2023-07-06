@@ -35,7 +35,7 @@ steps:
       command: 'publish'
       configuration: 'Release'
       projects: 'src/**/Worker.csproj'
-      arguments: '-r $(Runtime) -c Release --sc --no-restore --no-build -p:PublishReadyToRun=true -o $(Build.ArtifactStagingDirectory)'
+      arguments: '-r $(Runtime) -c Release --sc -p:PublishReadyToRun=true -o $(Build.ArtifactStagingDirectory)'
       publishWebProjects: false
       zipAfterPublish: false
   - task: PublishBuildArtifacts@1
