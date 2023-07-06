@@ -18,7 +18,7 @@ steps:
   - task: DotNetCoreCLI@2
     name: Restore
     inputs:
-      command: 'restore'
+      command: 'restore -p:PublishReadyToRun=true'
       projects: '**/*.csproj'
       arguments: '-r $(Runtime)'
   - task: DotNetCoreCLI@2
