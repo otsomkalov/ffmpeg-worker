@@ -1,5 +1,5 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Worker", "Worker\Worker.csproj", "{36276A30-2A4D-4357-B516-455F9EBA47FD}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Worker", "Worker\Worker.fsproj", "{FBDAA8C1-44CF-4197-A156-6FB076159212}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -7,9 +7,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{36276A30-2A4D-4357-B516-455F9EBA47FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{36276A30-2A4D-4357-B516-455F9EBA47FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{36276A30-2A4D-4357-B516-455F9EBA47FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{36276A30-2A4D-4357-B516-455F9EBA47FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FBDAA8C1-44CF-4197-A156-6FB076159212}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBDAA8C1-44CF-4197-A156-6FB076159212}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBDAA8C1-44CF-4197-A156-6FB076159212}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBDAA8C1-44CF-4197-A156-6FB076159212}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
