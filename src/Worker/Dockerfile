@@ -3,14 +3,14 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["Bot/Bot.csproj", "Worker/"]
-RUN dotnet restore "Worker/Worker.csproj" --runtime alpine-x64
+COPY ["Worker/Worker.fsproj", "Worker/"]
+RUN dotnet restore "Worker/Worker.fsproj" --runtime alpine-x64
 COPY . .
 WORKDIR "/src/Worker"
-RUN dotnet build "Worker.csproj" -c Release -o /app/build
+RUN dotnet build "Worker.fsproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "Worker.csproj" -c Release -o /app/publish \
+RUN dotnet publish "Worker.fsproj" -c Release -o /app/publish \
     --runtime alpine-x64 \
     --self-contained true \
     /p:PublishSingleFile=true

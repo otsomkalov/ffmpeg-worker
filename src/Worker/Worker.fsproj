@@ -17,10 +17,4 @@
   <ItemGroup>
     <Compile Include="Program.fs"/>
   </ItemGroup>
-  
-  <ItemGroup>
-    <None Include="Dockerfile">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 </Project>
