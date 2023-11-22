@@ -122,6 +122,8 @@ module FFMpeg =
 
       let processStartInfo =
         ProcessStartInfo(
+          RedirectStandardInput = true,
+          RedirectStandardOutput = true,
           RedirectStandardError = true,
           UseShellExecute = false,
           FileName = settings.Path,
@@ -130,20 +132,19 @@ module FFMpeg =
 
       try
         task {
-          use pcs = new Process(StartInfo = processStartInfo, EnableRaisingEvents = true)
 
           Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" fileInfo.Name targetFileName
 
-          pcs.Start() |> ignore
+          use pcs = Process.Start(processStartInfo)
 
+          let! output = pcs.StandardOutput.ReadToEndAsync()
           let! error = pcs.StandardError.ReadToEndAsync()
 
           do! pcs.WaitForExitAsync()
 
-          Logf.logfi logger "Conversion of %s{InputFileName} to %s{OutputFileName} done!" fileInfo.Name targetFileName
-
           return
             if pcs.ExitCode = 0 then
+              Logf.logfi logger "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}" fileInfo.Name targetFileName output
               let outputFileInfo = FileInfo(targetFilePath)
               Ok outputFileInfo
             else
