@@ -122,8 +122,6 @@ module FFMpeg =
 
       let processStartInfo =
         ProcessStartInfo(
-          RedirectStandardInput = true,
-          RedirectStandardOutput = true,
           RedirectStandardError = true,
           UseShellExecute = false,
           FileName = settings.Path,
@@ -137,18 +135,17 @@ module FFMpeg =
 
           use pcs = Process.Start(processStartInfo)
 
-          let! output = pcs.StandardOutput.ReadToEndAsync()
-          let! error = pcs.StandardError.ReadToEndAsync()
+          let! ffmpegOutput = pcs.StandardError.ReadToEndAsync()
 
           do! pcs.WaitForExitAsync()
 
           return
             if pcs.ExitCode = 0 then
-              Logf.logfi logger "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}" fileInfo.Name targetFileName output
+              Logf.logfi logger "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}" fileInfo.Name targetFileName ffmpegOutput
               let outputFileInfo = FileInfo(targetFilePath)
               Ok outputFileInfo
             else
-              Logf.logfe logger "FFMpeg error: %s{FFMpegError}" error
+              Logf.logfe logger "FFMpeg error: %s{FFMpegError}" ffmpegOutput
               ConvertError |> Error
         }
       with e ->
@@ -219,7 +216,7 @@ module Storage =
 
         Logf.logfi logger "Uploading file %s{FileName}" fileInfo.Name
 
-        do! outputBlobClient.UploadAsync fileInfo.FullName |> Task.map ignore
+        do! outputBlobClient.UploadAsync (fileInfo.FullName, true) |> Task.map ignore
 
         Logf.logfi logger "File %s{FileName} uploaded" fileInfo.Name
       }
