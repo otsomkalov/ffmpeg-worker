@@ -8,13 +8,14 @@ open System.Text.Json.Serialization
 open System.Threading
 open System.Threading.Tasks
 open Azure.Storage.Blobs
-open Azure.Storage.Blobs.Models
 open Azure.Storage.Queues
+open Azure.Storage.Queues.Models
 open FSharp
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open Microsoft.FSharp.Core
+open otsom.FSharp.Extensions.ServiceCollection
 
 module Helpers =
 
@@ -43,6 +44,11 @@ module Helpers =
       }
 
   module Option =
+    let taskMap mapping =
+      function
+      | Some v -> mapping v |> Task.map Some
+      | None -> None |> Task.FromResult
+
     let tap action option =
       match option with
       | Some v ->
@@ -68,6 +74,9 @@ module Helpers =
 
     let serialize value =
       JsonSerializer.Serialize(value, options)
+
+    let deserialize<'a> (str: string) =
+      JsonSerializer.Deserialize<'a>(str, options)
 
 open Helpers
 
@@ -111,7 +120,7 @@ module FFMpeg =
 
   type Convert = FileInfo -> Task<Result<FileInfo, ConvertError>>
 
-  let convert (settings: Settings.FFMpegSettings) (logger: ILogger) : Convert =
+  let convertFile (settings: Settings.FFMpegSettings) (logger: ILogger) : Convert =
     fun fileInfo ->
       let fileName = Path.GetFileNameWithoutExtension fileInfo.Name
 
@@ -141,7 +150,13 @@ module FFMpeg =
 
           return
             if pcs.ExitCode = 0 then
-              Logf.logfi logger "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}" fileInfo.Name targetFileName ffmpegOutput
+              Logf.logfi
+                logger
+                "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}"
+                fileInfo.Name
+                targetFileName
+                ffmpegOutput
+
               let outputFileInfo = FileInfo(targetFilePath)
               Ok outputFileInfo
             else
@@ -153,43 +168,93 @@ module FFMpeg =
         ConvertError |> Error |> Task.FromResult
 
 [<RequireQualifiedAccess>]
+module Queue =
+  type QueueType =
+    | Input
+    | Output
+
+  type GetQueueClient = QueueType -> QueueClient
+
+  let getQueueClient (settings: Settings.StorageSettings) =
+    let queueServiceClient = QueueServiceClient(settings.ConnectionString)
+
+    function
+    | Input -> settings.Input.Container
+    | Output -> settings.Output.Container
+    >> queueServiceClient.GetQueueClient
+
+  type GetInputMessage = unit -> Task<QueueMessage option>
+
+  let getInputMessage (getQueueClient: GetQueueClient) : GetInputMessage =
+    let inputQueueClient = getQueueClient Input
+
+    inputQueueClient.ReceiveMessageAsync
+    >> Task.map Option.ofObj
+    >> Task.map (Option.bind (fun m -> m.Value |> Option.ofObj))
+    >> Task.map (Option.filter (fun m -> not (String.IsNullOrEmpty(m.MessageText))))
+
+  type DeleteInputMessage = string * string -> Task<unit>
+
+  let deleteInputMessage (getQueueClient: GetQueueClient) : DeleteInputMessage =
+    let inputQueueClient = getQueueClient Input
+
+    fun (id, popReceipt) -> inputQueueClient.DeleteMessageAsync(id, popReceipt) |> Task.map ignore
+
+  type ConversionResult =
+    | Success of name: string
+    | Error of error: string
+
+  type ConversionResultMessage =
+    { Id: string; Result: ConversionResult }
+
+  let private sendOutputMessage (getQueueClient: GetQueueClient) =
+    let outputQueueClient = getQueueClient Output
+
+    JSON.serialize >> outputQueueClient.SendMessageAsync >> Task.map ignore
+
+  type SendSuccessMessage = string -> string -> Task<unit>
+
+  let sendSuccessMessage getQueueClient : SendSuccessMessage =
+    fun id name ->
+      let message: ConversionResultMessage =
+        { Id = id
+          Result = ConversionResult.Success name }
+
+      sendOutputMessage getQueueClient message
+
+  type SendFailureMessage = string -> Task<unit>
+
+  let sendFailureMessage getQueueClient : SendFailureMessage =
+    fun id ->
+      let message: ConversionResultMessage =
+        { Id = id
+          Result = ConversionResult.Error "Error during conversion!" }
+
+      sendOutputMessage getQueueClient message
+
+[<RequireQualifiedAccess>]
 module Storage =
+  type ContainerType =
+    | Input
+    | Output
 
-  type GetMessage = unit -> Task<Messages.InputMessage option>
+  type GetContainerClient = ContainerType -> BlobContainerClient
 
-  let getMessage (storageSettings: Settings.StorageSettings) logger : GetMessage =
-    fun () ->
-      let queueServiceClient = QueueServiceClient(storageSettings.ConnectionString)
+  type DownloadInputFile = string -> Task<FileInfo>
 
-      let inputQueueClient =
-        queueServiceClient.GetQueueClient(storageSettings.Input.Queue)
+  let getContainerClient (storageSettings: Settings.StorageSettings) : GetContainerClient =
+    let blobServiceClient = BlobServiceClient(storageSettings.ConnectionString)
 
-      let logMessage =
-        Logf.logfi logger "Received request to convert file with id: %s{FileId}"
+    function
+    | Input -> storageSettings.Input.Container
+    | Output -> storageSettings.Output.Container
+    >> blobServiceClient.GetBlobContainerClient
 
-      inputQueueClient.ReceiveMessageAsync()
-      |> Task.map Option.ofObj
-      |> Task.map (Option.bind (fun m -> m.Value |> Option.ofObj))
-      |> Task.map (Option.filter (fun m -> not (String.IsNullOrEmpty(m.MessageText))))
-      |> Task.bind (
-        Option.taskTap (fun m ->
-          inputQueueClient.DeleteMessageAsync(m.MessageId, m.PopReceipt)
-          |> Task.map ignore)
-      )
-      |> Task.map (Option.bind (fun v -> v.MessageText |> Option.ofObj))
-      |> Task.map (Option.map JsonSerializer.Deserialize<Messages.InputMessage>)
-      |> Task.map (Option.tap (fun im -> logMessage im.Id))
+  let downloadInputFile (getBlobContainer: GetContainerClient) logger : DownloadInputFile =
+    let inputContainerClient = getBlobContainer Input
 
-  type DownloadFile = string -> Task<FileInfo>
-
-  let downloadFile (storageSettings: Settings.StorageSettings) logger : DownloadFile =
     fun name ->
       task {
-        let blobServiceClient = BlobServiceClient(storageSettings.ConnectionString)
-
-        let inputContainerClient =
-          blobServiceClient.GetBlobContainerClient(storageSettings.Input.Container)
-
         let blobClient = inputContainerClient.GetBlobClient(name)
         let inputFilePath = Path.Combine(Path.GetTempPath(), name)
 
@@ -202,83 +267,77 @@ module Storage =
         return FileInfo(inputFilePath)
       }
 
-  type UploadFile = FileInfo -> Task<unit>
+  type UploadOutputFile = FileInfo -> Task<unit>
 
-  let uploadFile (storageSettings: Settings.StorageSettings) logger : UploadFile =
+  let uploadOutputFile (getBlobContainer: GetContainerClient) logger : UploadOutputFile =
+    let outputContainerClient = getBlobContainer Output
+
     fun fileInfo ->
       task {
-        let blobServiceClient = BlobServiceClient(storageSettings.ConnectionString)
-
-        let outputContainerClient =
-          blobServiceClient.GetBlobContainerClient(storageSettings.Output.Container)
-
         let outputBlobClient = outputContainerClient.GetBlobClient(fileInfo.Name)
 
         Logf.logfi logger "Uploading file %s{FileName}" fileInfo.Name
 
-        do! outputBlobClient.UploadAsync (fileInfo.FullName, true) |> Task.map ignore
+        do! outputBlobClient.UploadAsync(fileInfo.FullName, true) |> Task.map ignore
 
         Logf.logfi logger "File %s{FileName} uploaded" fileInfo.Name
       }
 
-  type ConversionResult =
-    | Success of name: string
-    | Error of error: string
+  type DeleteInputFile = string -> Task<unit>
 
-  type ConversionResultMessage =
-    { Id: string; Result: ConversionResult }
+  let deleteInputFile (getBlobContainer: GetContainerClient) logger : DeleteInputFile =
+    let inputContainerClient = getBlobContainer Input
 
-  type SendMessage = ConversionResultMessage -> Task<unit>
-
-  let sendMessage (storageSettings: Settings.StorageSettings) : SendMessage =
-    fun conversionResult ->
+    fun name ->
       task {
-        let queueServiceClient = QueueServiceClient(storageSettings.ConnectionString)
+        let outputBlobClient = inputContainerClient.GetBlobClient(name)
 
-        let outputQueueClient =
-          queueServiceClient.GetQueueClient(storageSettings.Output.Queue)
+        Logf.logfi logger "Deleting file %s{FileName}" name
 
-        let message = JSON.serialize conversionResult
+        do! outputBlobClient.DeleteAsync() |> Task.map ignore
 
-        do! outputQueueClient.SendMessageAsync(message) |> Task.map ignore
+        Logf.logfi logger "File %s{FileName} deleted" name
       }
 
 [<RequireQualifiedAccess>]
 module Workflows =
   let convert
-    (getMessage: Storage.GetMessage)
-    (downloadFile: Storage.DownloadFile)
+    (getInputMessage: Queue.GetInputMessage)
+    (downloadInputFile: Storage.DownloadInputFile)
     (convert: FFMpeg.Convert)
-    (uploadFile: Storage.UploadFile)
-    (sendMessage: Storage.SendMessage)
-    =
-    fun () ->
+    (uploadOutputFile: Storage.UploadOutputFile)
+    (deleteInputMessage: Queue.DeleteInputMessage)
+    (deleteInputFile: Storage.DeleteInputFile)
+    (sendSuccessMessage: Queue.SendSuccessMessage)
+    (sendFailureMessage: Queue.SendFailureMessage)
+    : unit -> Task<unit> =
+    let processQueueMessage (m: QueueMessage) =
       task {
-        let! message = getMessage ()
+        let inputMessage = JSON.deserialize<Messages.InputMessage> m.MessageText
 
-        match message with
-        | Some m ->
-          let! inputFileInfo = downloadFile m.Name
+        let! inputFileInfo = downloadInputFile inputMessage.Name
 
-          let! conversionResult = convert inputFileInfo
+        let! conversionResult = convert inputFileInfo
 
+        do!
           match conversionResult with
           | Ok outputFileInfo ->
-            do! uploadFile outputFileInfo
+            task {
+              do! uploadOutputFile outputFileInfo
+              do! deleteInputFile inputMessage.Name
+              do! sendSuccessMessage inputMessage.Id outputFileInfo.Name
+            }
+          | Result.Error FFMpeg.ConvertError -> sendFailureMessage inputMessage.Id
 
-            let message: Storage.ConversionResultMessage =
-              { Id = m.Id
-                Result = Storage.ConversionResult.Success outputFileInfo.Name }
+        do! deleteInputMessage (m.MessageId, m.PopReceipt)
 
-            do! sendMessage message
-          | Result.Error FFMpeg.ConvertError ->
-            let message: Storage.ConversionResultMessage =
-              { Id = m.Id
-                Result = Storage.ConversionResult.Error "Error during conversion!" }
-
-            do! sendMessage message
-        | None -> ()
+        return ()
       }
+
+    fun () ->
+      getInputMessage ()
+      |> Task.bind (Option.taskMap processQueueMessage)
+      |> Task.map (Option.defaultWith id)
 
 [<RequireQualifiedAccess>]
 module Worker =
@@ -287,25 +346,40 @@ module Worker =
   type Worker
     (
       logger: ILogger<Worker>,
-      _storageOptions: IOptions<Settings.StorageSettings>,
-      _ffmpegOptions: IOptions<Settings.FFMpegSettings>,
-      _appOptions: IOptions<Settings.AppSettings>
+      ffmpegSettings: Settings.FFMpegSettings,
+      appSettings: Settings.AppSettings,
+      getBlobContainer: Storage.GetContainerClient,
+      getQueueClient: Queue.GetQueueClient
     ) =
     inherit BackgroundService()
 
-    let ffmpegSettings = _ffmpegOptions.Value
-    let appSettings = _appOptions.Value
-    let storageSettings = _storageOptions.Value
-
     override _.ExecuteAsync(ct: CancellationToken) =
-      let convert = FFMpeg.convert ffmpegSettings logger
-      let getMessage = Storage.getMessage storageSettings logger
-      let downloadFile = Storage.downloadFile storageSettings logger
-      let uploadFile = Storage.uploadFile storageSettings logger
-      let sendMessage = Storage.sendMessage storageSettings
+      let getInputMessage = Queue.getInputMessage getQueueClient
+
+      let downloadInputFile = Storage.downloadInputFile getBlobContainer logger
+
+      let convertFile = FFMpeg.convertFile ffmpegSettings logger
+
+      let uploadOutputFile = Storage.uploadOutputFile getBlobContainer logger
+
+      let deleteInputMessage = Queue.deleteInputMessage getQueueClient
+
+      let deleteInputFile = Storage.deleteInputFile getBlobContainer logger
+
+      let sendSuccessMessage = Queue.sendSuccessMessage getQueueClient
+
+      let sendFailureMessage = Queue.sendFailureMessage getQueueClient
 
       let convert =
-        Workflows.convert getMessage downloadFile convert uploadFile sendMessage
+        Workflows.convert
+          getInputMessage
+          downloadInputFile
+          convertFile
+          uploadOutputFile
+          deleteInputMessage
+          deleteInputFile
+          sendSuccessMessage
+          sendFailureMessage
 
       task {
         while not ct.IsCancellationRequested do
@@ -317,6 +391,8 @@ module Worker =
           do! Task.Delay(appSettings.Delay)
       }
 
+#nowarn "20"
+
 module Program =
   open Microsoft.Extensions.Hosting
   open Microsoft.Extensions.DependencyInjection
@@ -326,13 +402,27 @@ module Program =
 
     ()
 
-  let private configureServices (hostContext: HostBuilderContext) (services: IServiceCollection) =
-    let configuration = hostContext.Configuration
+  let private configureQueueServiceClient (options: IOptions<Settings.StorageSettings>) =
+    let settings = options.Value
+
+    QueueServiceClient(settings.ConnectionString)
+
+  let private configureServices _ (services: IServiceCollection) =
+    services
+      .AddSingletonFunc<Settings.AppSettings, IConfiguration>(fun cfg -> cfg.Get<Settings.AppSettings>())
+      .AddSingletonFunc<Settings.FFMpegSettings, IConfiguration>(fun cfg ->
+        cfg
+          .GetSection(Settings.FFMpegSettings.SectionName)
+          .Get<Settings.FFMpegSettings>())
+      .AddSingletonFunc<Settings.StorageSettings, IConfiguration>(fun cfg ->
+        cfg
+          .GetSection(Settings.StorageSettings.SectionName)
+          .Get<Settings.StorageSettings>())
 
     services
-      .Configure<Settings.AppSettings>(configuration)
-      .Configure<Settings.FFMpegSettings>(configuration.GetSection(Settings.FFMpegSettings.SectionName))
-      .Configure<Settings.StorageSettings>(configuration.GetSection(Settings.StorageSettings.SectionName))
+      .AddSingletonFunc<QueueServiceClient, Settings.StorageSettings>(fun settings -> QueueServiceClient(settings.ConnectionString))
+      .AddSingletonFunc<Storage.GetContainerClient, Settings.StorageSettings>(Storage.getContainerClient)
+      .AddSingletonFunc<Queue.GetQueueClient, Settings.StorageSettings>(Queue.getQueueClient)
 
     services.AddHostedService<Worker.Worker>() |> ignore
 
