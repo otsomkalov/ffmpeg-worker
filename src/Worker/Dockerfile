@@ -4,14 +4,14 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY ["Worker/Worker.fsproj", "Worker/"]
-RUN dotnet restore "Worker/Worker.fsproj" --runtime alpine-x64
+RUN dotnet restore "Worker/Worker.fsproj" --runtime linux-musl-x64
 COPY . .
 WORKDIR "/src/Worker"
 RUN dotnet build "Worker.fsproj" -c Release -o /app/build
 
 FROM build AS publish
 RUN dotnet publish "Worker.fsproj" -c Release -o /app/publish \
-    --runtime alpine-x64 \
+    --runtime linux-musl-x64 \
     --self-contained true \
     /p:PublishSingleFile=true
 
