@@ -1,0 +1,52 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  Runtime: 'linux-musl-x64'
+  ProjectVersion: '0.0'
+  BuildNumber: '$(Build.BuildId)'
+  VersionNumber: '$(projectVersion).$(buildNumber)'
+
+steps:
+  - task: UseDotNet@2
+    inputs:
+      version: '8.x'
+  - task: DotNetCoreCLI@2
+    name: Restore
+    inputs:
+      command: 'restore'
+      configuration: 'Release'
+      projects: 'src/**/*.fsproj'
+      arguments: '-r $(Runtime)'
+  - task: DotNetCoreCLI@2
+    name: Build
+    inputs:
+      command: 'build'
+      configuration: 'Release'
+      projects: 'src/**/*.fsproj'
+      arguments: '-r $(Runtime)'
+      publishWebProjects: false
+  - task: DotNetCoreCLI@2
+    name: Publish
+    inputs:
+      command: 'publish'
+      configuration: 'Release'
+      projects: 'src/**/Worker.fsproj'
+      arguments: '-r $(Runtime) --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)'
+      publishWebProjects: false
+      zipAfterPublish: false
+  - task: PublishBuildArtifacts@1
+    name: Pack
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'drop'
