@@ -39,7 +39,7 @@ steps:
       command: 'publish'
       configuration: 'Release'
       projects: 'src/**/Worker.fsproj'
-      arguments: '-r $(Runtime) --sc --no-restore --no-build -p:PublishSingleFile=true -o $(Build.ArtifactStagingDirectory)'
+      arguments: '-r $(Runtime) --sc -p:PublishSingleFile=true -o $(Build.ArtifactStagingDirectory)'
       publishWebProjects: false
       zipAfterPublish: false
   - task: PublishBuildArtifacts@1
