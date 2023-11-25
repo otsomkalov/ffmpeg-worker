@@ -13,6 +13,9 @@ pool:
 
 variables:
   Runtime: 'linux-musl-x64'
+  ProjectVersion: '0.0'
+  BuildNumber: '$(Build.BuildId)'
+  VersionNumber: '$(projectVersion).$(buildNumber)'
 
 steps:
   - task: UseDotNet@2
@@ -39,7 +42,7 @@ steps:
       command: 'publish'
       configuration: 'Release'
       projects: 'src/**/Worker.fsproj'
-      arguments: '-r $(Runtime) --sc -p:PublishSingleFile=true -o $(Build.ArtifactStagingDirectory)'
+      arguments: '-r $(Runtime) --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)'
       publishWebProjects: false
       zipAfterPublish: false
   - task: PublishBuildArtifacts@1

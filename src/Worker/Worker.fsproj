@@ -3,8 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <UserSecretsId>dotnet-Worker-4D7F76B9-D222-454A-9772-79BD789BB07C</UserSecretsId>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.0.6</Version>
   </PropertyGroup>
 
   <ItemGroup>
