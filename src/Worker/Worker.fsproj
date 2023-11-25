@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <UserSecretsId>dotnet-Worker-4D7F76B9-D222-454A-9772-79BD789BB07C</UserSecretsId>
-    <Version>0.0.5</Version>
+    <Version>0.0.6</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +14,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.21.0"/>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
     <PackageReference Include="otsom.FSharp.Extensions" Version="0.0.1"/>
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.13.1"/>
   </ItemGroup>
 
   <ItemGroup>

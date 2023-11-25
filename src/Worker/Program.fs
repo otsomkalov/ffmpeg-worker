@@ -426,6 +426,8 @@ module Program =
 
     services.AddHostedService<Worker.Worker>() |> ignore
 
+    services.AddApplicationInsightsTelemetryWorkerService()
+
   let private createHostBuilder args =
     Host
       .CreateDefaultBuilder(args)
