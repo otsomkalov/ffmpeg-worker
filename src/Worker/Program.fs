@@ -15,25 +15,12 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open Microsoft.FSharp.Core
+open otsom.FSharp.Extensions
 open otsom.FSharp.Extensions.ServiceCollection
 
 module Helpers =
 
   module Task =
-    let map mapping task' =
-      task {
-        let! v = task'
-
-        return mapping v
-      }
-
-    let bind (binder: 'a -> Task<'b>) task' =
-      task {
-        let! v = task'
-
-        return! binder v
-      }
-
     let tap (action: 'a -> unit) task' =
       task {
         let! v = task'

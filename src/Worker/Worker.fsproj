@@ -13,8 +13,7 @@
     <PackageReference Include="FSharp.SystemTextJson" Version="1.2.42"/>
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.21.0"/>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
-    <PackageReference Include="otsom.FSharp.Extensions" Version="0.0.1"/>
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.13.1"/>
+    <PackageReference Include="otsom.FSharp.Extensions" Version="0.0.3"/>
   </ItemGroup>
 
   <ItemGroup>
