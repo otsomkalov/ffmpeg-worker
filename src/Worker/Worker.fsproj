@@ -22,7 +22,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Dockerfile"/>
+    <Content Include="Dockerfile">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

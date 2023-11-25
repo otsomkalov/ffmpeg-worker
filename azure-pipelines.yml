@@ -22,6 +22,7 @@ steps:
     name: Restore
     inputs:
       command: 'restore'
+      configuration: 'Release'
       projects: 'src/**/*.fsproj'
       arguments: '-r $(Runtime)'
   - task: DotNetCoreCLI@2
