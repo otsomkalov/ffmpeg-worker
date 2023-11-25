@@ -15,6 +15,9 @@ variables:
   Runtime: 'alpine-x64'
 
 steps:
+  - task: UseDotNet@2
+    inputs:
+      version: '8.x'
   - task: DotNetCoreCLI@2
     name: Restore
     inputs:
