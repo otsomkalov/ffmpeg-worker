@@ -12,7 +12,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  Runtime: 'alpine-x64'
+  Runtime: 'linux-musl-x64'
 
 steps:
   - task: UseDotNet@2
