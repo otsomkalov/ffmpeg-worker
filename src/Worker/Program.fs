@@ -428,6 +428,8 @@ module Program =
 
     services.AddApplicationInsightsTelemetryWorkerService()
 
+    ()
+
   let private createHostBuilder args =
     Host
       .CreateDefaultBuilder(args)
