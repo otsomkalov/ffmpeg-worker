@@ -17,6 +17,7 @@ open Microsoft.Extensions.Options
 open Microsoft.FSharp.Core
 open otsom.FSharp.Extensions
 open otsom.FSharp.Extensions.ServiceCollection
+open shortid
 
 module Helpers =
 
@@ -35,25 +36,6 @@ module Helpers =
       function
       | Some v -> mapping v |> Task.map Some
       | None -> None |> Task.FromResult
-
-    let tap action option =
-      match option with
-      | Some v ->
-        do action v
-        Some v
-      | None -> None
-
-    let taskTap action option =
-      task {
-        return!
-          match option with
-          | Some v ->
-            task {
-              do! action v
-              return Some v
-            }
-          | None -> None |> Task.FromResult
-      }
 
   module JSON =
     let private options =
@@ -240,18 +222,23 @@ module Storage =
   let downloadInputFile (getBlobContainer: GetContainerClient) logger : DownloadInputFile =
     let inputContainerClient = getBlobContainer Input
 
-    fun name ->
+    fun inputFileName ->
       task {
-        let blobClient = inputContainerClient.GetBlobClient(name)
-        let inputFilePath = Path.Combine(Path.GetTempPath(), name)
+        let blobClient = inputContainerClient.GetBlobClient(inputFileName)
 
-        Logf.logfi logger "Downloading file %s{FileName}" name
+        let downloadedFileName = ShortId.Generate()
+        let downloadedFileExtension = Path.GetExtension inputFileName
+        let fullDownloadedFileName = sprintf "%s%s" downloadedFileName downloadedFileExtension
 
-        do! blobClient.DownloadToAsync(inputFilePath) |> Task.map ignore
+        let downloadedFilePath = Path.Combine(Path.GetTempPath(), fullDownloadedFileName)
 
-        Logf.logfi logger "File %s{FileName} downloaded" name
+        Logf.logfi logger "Downloading file %s{InputFileName} to %s{DownloadedFileName}" inputFileName fullDownloadedFileName
 
-        return FileInfo(inputFilePath)
+        do! blobClient.DownloadToAsync(downloadedFilePath) |> Task.map ignore
+
+        Logf.logfi logger "File %s{InputFileName} downloaded to %s{DownloadedFileName}" inputFileName fullDownloadedFileName
+
+        return FileInfo(downloadedFilePath)
       }
 
   type UploadOutputFile = FileInfo -> Task<unit>
@@ -263,11 +250,11 @@ module Storage =
       task {
         let outputBlobClient = outputContainerClient.GetBlobClient(fileInfo.Name)
 
-        Logf.logfi logger "Uploading file %s{FileName}" fileInfo.Name
+        Logf.logfi logger "Uploading file %s{ConvertedFileName}" fileInfo.Name
 
         do! outputBlobClient.UploadAsync(fileInfo.FullName, true) |> Task.map ignore
 
-        Logf.logfi logger "File %s{FileName} uploaded" fileInfo.Name
+        Logf.logfi logger "File %s{ConvertedFileName} uploaded" fileInfo.Name
       }
 
   type DeleteInputFile = string -> Task<unit>
@@ -279,12 +266,22 @@ module Storage =
       task {
         let outputBlobClient = inputContainerClient.GetBlobClient(name)
 
-        Logf.logfi logger "Deleting file %s{FileName}" name
+        Logf.logfi logger "Deleting file %s{InputFileName}" name
 
-        do! outputBlobClient.DeleteAsync() |> Task.map ignore
+        do! outputBlobClient.DeleteIfExistsAsync() |> Task.map ignore
 
-        Logf.logfi logger "File %s{FileName} deleted" name
+        Logf.logfi logger "File %s{InputFileName} deleted" name
       }
+
+[<RequireQualifiedAccess>]
+module Files =
+  type DeleteDownloadedFile = string -> unit
+
+  let deleteDownloadedFile: DeleteDownloadedFile = fun path -> File.Delete(path)
+
+  type DeleteConvertedFile = string -> unit
+
+  let deleteConvertedFile: DeleteConvertedFile = fun path -> File.Delete(path)
 
 [<RequireQualifiedAccess>]
 module Workflows =
@@ -295,6 +292,8 @@ module Workflows =
     (uploadOutputFile: Storage.UploadOutputFile)
     (deleteInputMessage: Queue.DeleteInputMessage)
     (deleteInputFile: Storage.DeleteInputFile)
+    (deleteDownloadedFile: Files.DeleteDownloadedFile)
+    (deleteConvertedFile: Files.DeleteConvertedFile)
     (sendSuccessMessage: Queue.SendSuccessMessage)
     (sendFailureMessage: Queue.SendFailureMessage)
     : unit -> Task<unit> =
@@ -312,6 +311,8 @@ module Workflows =
             task {
               do! uploadOutputFile outputFileInfo
               do! deleteInputFile inputMessage.Name
+              do deleteDownloadedFile inputFileInfo.FullName
+              do deleteConvertedFile outputFileInfo.FullName
               do! sendSuccessMessage inputMessage.Id outputFileInfo.Name
             }
           | Result.Error FFMpeg.ConvertError -> sendFailureMessage inputMessage.Id
@@ -353,6 +354,10 @@ module Worker =
 
       let deleteInputFile = Storage.deleteInputFile getBlobContainer logger
 
+      let deleteDownloadedFile = Files.deleteDownloadedFile
+
+      let deleteConvertedFile = Files.deleteConvertedFile
+
       let sendSuccessMessage = Queue.sendSuccessMessage getQueueClient
 
       let sendFailureMessage = Queue.sendFailureMessage getQueueClient
@@ -365,6 +370,8 @@ module Worker =
           uploadOutputFile
           deleteInputMessage
           deleteInputFile
+          deleteDownloadedFile
+          deleteConvertedFile
           sendSuccessMessage
           sendFailureMessage
 
