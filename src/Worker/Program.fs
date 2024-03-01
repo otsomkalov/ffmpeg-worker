@@ -380,7 +380,7 @@ module Worker =
           try
             do! convert ()
           with e ->
-            logger.LogError("Worker error: {WorkerError}", e)
+            logger.LogError(e, "Worker error:")
 
           do! Task.Delay(appSettings.Delay)
       }
