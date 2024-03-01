@@ -377,7 +377,10 @@ module Worker =
 
       task {
         while not ct.IsCancellationRequested do
-          do! convert ()
+          try
+            do! convert ()
+          with e ->
+            logger.LogError("Worker error: {WorkerError}", e)
 
           do! Task.Delay(appSettings.Delay)
       }
@@ -414,8 +417,6 @@ module Program =
       .AddSingletonFunc<QueueServiceClient, Settings.StorageSettings>(fun settings -> QueueServiceClient(settings.ConnectionString))
       .AddSingletonFunc<Storage.GetContainerClient, Settings.StorageSettings>(Storage.getContainerClient)
       .AddSingletonFunc<Queue.GetQueueClient, Settings.StorageSettings>(Queue.getQueueClient)
-
-    services.Configure<HostOptions>(fun (opts: HostOptions) -> opts.BackgroundServiceExceptionBehavior <- BackgroundServiceExceptionBehavior.Ignore)
 
     services.AddHostedService<Worker.Worker>() |> ignore
 
