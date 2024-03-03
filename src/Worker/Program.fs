@@ -94,11 +94,11 @@ module FFMpeg =
       let fileName = Path.GetFileNameWithoutExtension fileInfo.Name
 
       let targetExtension = settings.TargetExtension |> Option.defaultValue fileInfo.Extension
+      let outputName = sprintf "%s%s" fileName targetExtension
 
-      let targetFileName = $"{fileName}{targetExtension}"
-      let targetFilePath = Path.Combine(Path.GetTempPath(), targetFileName)
+      let outputPath = Path.Combine(Path.GetTempPath(), outputName)
 
-      let arguments = [ $"-i {fileInfo.FullName}"; settings.Arguments; targetFilePath ]
+      let arguments = [ $"-i {fileInfo.FullName}"; settings.Arguments; outputPath ]
 
       let processStartInfo =
         ProcessStartInfo(
@@ -110,7 +110,7 @@ module FFMpeg =
 
       try
         task {
-          Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" fileInfo.Name targetFileName
+          Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" fileInfo.Name outputName
 
           use pcs = Process.Start(processStartInfo)
 
@@ -124,11 +124,10 @@ module FFMpeg =
                 logger
                 "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}"
                 fileInfo.Name
-                targetFileName
+                outputPath
                 ffmpegOutput
 
-              let outputFileInfo = FileInfo(targetFilePath)
-              Ok outputFileInfo
+              outputPath |> FileInfo |> Ok
             else
               Logf.logfe logger "FFMpeg error: %s{FFMpegError}" ffmpegOutput
               ConvertError |> Error
