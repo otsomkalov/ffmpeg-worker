@@ -95,7 +95,7 @@ module FFMpeg =
 
       let targetExtension = settings.TargetExtension |> Option.defaultValue fileInfo.Extension
 
-      let targetFileName = $"{fileName}.{targetExtension}"
+      let targetFileName = $"{fileName}{targetExtension}"
       let targetFilePath = Path.Combine(Path.GetTempPath(), targetFileName)
 
       let arguments = [ $"-i {fileInfo.FullName}"; settings.Arguments; targetFilePath ]
