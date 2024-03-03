@@ -5,6 +5,7 @@ open shortid
 
 type File =
   { Name: string
+    FullName: string
     Extension: string
     Path: string }
 
@@ -16,5 +17,6 @@ module File =
     let filePath = Path.Combine(Path.GetTempPath(), fileNameWithExtension)
 
     { Name = name
+      FullName = fileNameWithExtension
       Extension = extension
       Path = filePath }

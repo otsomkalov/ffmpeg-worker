@@ -107,7 +107,7 @@ module FFMpeg =
 
       try
         task {
-          Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" fileInfo.Name outputFile.Name
+          Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" fileInfo.FullName outputFile.FullName
 
           use pcs = Process.Start(processStartInfo)
 
@@ -120,8 +120,8 @@ module FFMpeg =
               Logf.logfi
                 logger
                 "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}"
-                fileInfo.Name
-                outputFile.Name
+                fileInfo.FullName
+                outputFile.FullName
                 ffmpegOutput
 
               outputFile |> Ok
@@ -226,11 +226,11 @@ module Storage =
         let downloadedFileExtension = Path.GetExtension inputFileName
         let downloadedFile = File.create downloadedFileExtension
 
-        Logf.logfi logger "Downloading file %s{InputFileName} to %s{DownloadedFileName}" inputFileName downloadedFile.Name
+        Logf.logfi logger "Downloading file %s{InputFileName} to %s{DownloadedFileName}" inputFileName downloadedFile.FullName
 
         do! blobClient.DownloadToAsync(downloadedFile.Path) |> Task.map ignore
 
-        Logf.logfi logger "File %s{InputFileName} downloaded to %s{DownloadedFileName}" inputFileName downloadedFile.Name
+        Logf.logfi logger "File %s{InputFileName} downloaded to %s{DownloadedFileName}" inputFileName downloadedFile.FullName
 
         return downloadedFile
       }
