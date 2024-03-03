@@ -70,7 +70,7 @@ module Settings =
   type FFMpegSettings =
     { Path: string
       Arguments: string
-      TargetExtension: string }
+      TargetExtension: string option }
 
     static member SectionName = "FFMpeg"
 
@@ -93,7 +93,9 @@ module FFMpeg =
     fun fileInfo ->
       let fileName = Path.GetFileNameWithoutExtension fileInfo.Name
 
-      let targetFileName = $"{fileName}.{settings.TargetExtension}"
+      let targetExtension = settings.TargetExtension |> Option.defaultValue fileInfo.Extension
+
+      let targetFileName = $"{fileName}.{targetExtension}"
       let targetFilePath = Path.Combine(Path.GetTempPath(), targetFileName)
 
       let arguments = [ $"-i {fileInfo.FullName}"; settings.Arguments; targetFilePath ]
@@ -108,7 +110,6 @@ module FFMpeg =
 
       try
         task {
-
           Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" fileInfo.Name targetFileName
 
           use pcs = Process.Start(processStartInfo)
