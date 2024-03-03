@@ -242,13 +242,13 @@ module Storage =
 
     fun file ->
       task {
-        let outputBlobClient = outputContainerClient.GetBlobClient(file.Name)
+        let outputBlobClient = outputContainerClient.GetBlobClient(file.FullName)
 
-        Logf.logfi logger "Uploading file %s{ConvertedFileName}" file.Name
+        Logf.logfi logger "Uploading file %s{ConvertedFileName}" file.FullName
 
         do! outputBlobClient.UploadAsync(file.Path, true) |> Task.map ignore
 
-        Logf.logfi logger "File %s{ConvertedFileName} uploaded" file.Name
+        Logf.logfi logger "File %s{ConvertedFileName} uploaded" file.FullName
       }
 
   type DeleteInputFile = string -> Task<unit>
@@ -258,11 +258,11 @@ module Storage =
 
     fun name ->
       task {
-        let outputBlobClient = inputContainerClient.GetBlobClient(name)
+        let inputBlobContainer = inputContainerClient.GetBlobClient(name)
 
         Logf.logfi logger "Deleting file %s{InputFileName}" name
 
-        do! outputBlobClient.DeleteIfExistsAsync() |> Task.map ignore
+        do! inputBlobContainer.DeleteIfExistsAsync() |> Task.map ignore
 
         Logf.logfi logger "File %s{InputFileName} deleted" name
       }
