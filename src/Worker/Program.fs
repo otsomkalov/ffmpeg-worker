@@ -90,12 +90,12 @@ module FFMpeg =
   type Convert = File -> Task<Result<File, ConvertError>>
 
   let convertFile (settings: Settings.FFMpegSettings) (logger: ILogger) : Convert =
-    fun fileInfo ->
-      let targetExtension = settings.TargetExtension |> Option.ofObj |> Option.defaultValue fileInfo.Extension
+    fun file ->
+      let targetExtension = settings.TargetExtension |> Option.ofObj |> Option.defaultValue file.Extension
 
       let outputFile = File.create targetExtension
 
-      let arguments = [ $"-i {fileInfo.Path}"; settings.Arguments; outputFile.Path ]
+      let arguments = [ $"-i {file.Path}"; settings.Arguments; outputFile.Path ]
 
       let processStartInfo =
         ProcessStartInfo(
@@ -107,7 +107,7 @@ module FFMpeg =
 
       try
         task {
-          Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" fileInfo.FullName outputFile.FullName
+          Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" file.FullName outputFile.FullName
 
           use pcs = Process.Start(processStartInfo)
 
@@ -120,7 +120,7 @@ module FFMpeg =
               Logf.logfi
                 logger
                 "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}"
-                fileInfo.FullName
+                file.FullName
                 outputFile.FullName
                 ffmpegOutput
 
