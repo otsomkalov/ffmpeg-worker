@@ -70,7 +70,7 @@ module Settings =
   type FFMpegSettings =
     { Path: string
       Arguments: string
-      TargetExtension: string option }
+      TargetExtension: string }
 
     static member SectionName = "FFMpeg"
 
@@ -91,7 +91,7 @@ module FFMpeg =
 
   let convertFile (settings: Settings.FFMpegSettings) (logger: ILogger) : Convert =
     fun fileInfo ->
-      let targetExtension = settings.TargetExtension |> Option.defaultValue fileInfo.Extension
+      let targetExtension = settings.TargetExtension |> Option.ofObj |> Option.defaultValue fileInfo.Extension
 
       let outputFile = File.create targetExtension
 
