@@ -226,11 +226,11 @@ module Storage =
         let downloadedFileExtension = Path.GetExtension inputFileName
         let downloadedFile = File.create downloadedFileExtension
 
-        Logf.logfi logger "Downloading file %s{InputFileName} to %s{DownloadedFileName}" inputFileName downloadedFile.FullName
+        Logf.logfi logger "Downloading input file %s{InputFileName} to %s{DownloadedFileName}" inputFileName downloadedFile.FullName
 
         do! blobClient.DownloadToAsync(downloadedFile.Path) |> Task.map ignore
 
-        Logf.logfi logger "File %s{InputFileName} downloaded to %s{DownloadedFileName}" inputFileName downloadedFile.FullName
+        Logf.logfi logger "Input file %s{InputFileName} downloaded to %s{DownloadedFileName}" inputFileName downloadedFile.FullName
 
         return downloadedFile
       }
@@ -244,11 +244,11 @@ module Storage =
       task {
         let outputBlobClient = outputContainerClient.GetBlobClient(file.FullName)
 
-        Logf.logfi logger "Uploading file %s{ConvertedFileName}" file.FullName
+        Logf.logfi logger "Uploading output file %s{ConvertedFileName}" file.FullName
 
         do! outputBlobClient.UploadAsync(file.Path, true) |> Task.map ignore
 
-        Logf.logfi logger "File %s{ConvertedFileName} uploaded" file.FullName
+        Logf.logfi logger "Output file %s{ConvertedFileName} uploaded" file.FullName
       }
 
   type DeleteInputFile = string -> Task<unit>
@@ -260,11 +260,11 @@ module Storage =
       task {
         let inputBlobContainer = inputContainerClient.GetBlobClient(name)
 
-        Logf.logfi logger "Deleting file %s{InputFileName}" name
+        Logf.logfi logger "Deleting input file %s{InputFileName}" name
 
         do! inputBlobContainer.DeleteIfExistsAsync() |> Task.map ignore
 
-        Logf.logfi logger "File %s{InputFileName} deleted" name
+        Logf.logfi logger "Input file %s{InputFileName} deleted" name
       }
 
 [<RequireQualifiedAccess>]
@@ -307,7 +307,7 @@ module Workflows =
               do! deleteInputFile inputMessage.Name
               do deleteDownloadedFile inputFileInfo.Path
               do deleteConvertedFile outputFile.Path
-              do! sendSuccessMessage inputMessage.Id outputFile.Name
+              do! sendSuccessMessage inputMessage.Id outputFile.FullName
             }
           | Result.Error FFMpeg.ConvertError -> sendFailureMessage inputMessage.Id
 
