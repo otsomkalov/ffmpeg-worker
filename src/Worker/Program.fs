@@ -1,4 +1,4 @@
-module Worker
+namespace Worker
 
 open System
 open System.Diagnostics
@@ -15,22 +15,11 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open Microsoft.FSharp.Core
+open Worker.Domain
 open otsom.FSharp.Extensions
 open otsom.FSharp.Extensions.ServiceCollection
-open shortid
 
 module Helpers =
-
-  module Task =
-    let tap (action: 'a -> unit) task' =
-      task {
-        let! v = task'
-
-        action v
-
-        return v
-      }
-
   module Option =
     let taskMap mapping =
       function
@@ -87,16 +76,15 @@ module Messages =
 module FFMpeg =
   type ConvertError = ConvertError
 
-  type Convert = FileInfo -> Task<Result<FileInfo, ConvertError>>
+  type Convert = File -> Task<Result<File, ConvertError>>
 
   let convertFile (settings: Settings.FFMpegSettings) (logger: ILogger) : Convert =
-    fun fileInfo ->
-      let fileName = Path.GetFileNameWithoutExtension fileInfo.Name
+    fun file ->
+      let targetExtension = settings.TargetExtension |> Option.ofObj |> Option.defaultValue file.Extension
 
-      let targetFileName = $"{fileName}.{settings.TargetExtension}"
-      let targetFilePath = Path.Combine(Path.GetTempPath(), targetFileName)
+      let outputFile = File.create targetExtension
 
-      let arguments = [ $"-i {fileInfo.FullName}"; settings.Arguments; targetFilePath ]
+      let arguments = [ $"-i {file.Path}"; settings.Arguments; outputFile.Path ]
 
       let processStartInfo =
         ProcessStartInfo(
@@ -108,8 +96,7 @@ module FFMpeg =
 
       try
         task {
-
-          Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" fileInfo.Name targetFileName
+          Logf.logfi logger "Starting conversion of %s{InputFileName} to %s{OutputFileName}" file.FullName outputFile.FullName
 
           use pcs = Process.Start(processStartInfo)
 
@@ -122,12 +109,11 @@ module FFMpeg =
               Logf.logfi
                 logger
                 "Conversion of %s{InputFileName} to %s{OutputFileName} done! FFMpeg output: %s{FFMpegOutput}"
-                fileInfo.Name
-                targetFileName
+                file.FullName
+                outputFile.FullName
                 ffmpegOutput
 
-              let outputFileInfo = FileInfo(targetFilePath)
-              Ok outputFileInfo
+              outputFile |> Ok
             else
               Logf.logfe logger "FFMpeg error: %s{FFMpegError}" ffmpegOutput
               ConvertError |> Error
@@ -209,7 +195,7 @@ module Storage =
 
   type GetContainerClient = ContainerType -> BlobContainerClient
 
-  type DownloadInputFile = string -> Task<FileInfo>
+  type DownloadInputFile = string -> Task<File>
 
   let getContainerClient (storageSettings: Settings.StorageSettings) : GetContainerClient =
     let blobServiceClient = BlobServiceClient(storageSettings.ConnectionString)
@@ -226,35 +212,32 @@ module Storage =
       task {
         let blobClient = inputContainerClient.GetBlobClient(inputFileName)
 
-        let downloadedFileName = ShortId.Generate()
         let downloadedFileExtension = Path.GetExtension inputFileName
-        let fullDownloadedFileName = sprintf "%s%s" downloadedFileName downloadedFileExtension
+        let downloadedFile = File.create downloadedFileExtension
 
-        let downloadedFilePath = Path.Combine(Path.GetTempPath(), fullDownloadedFileName)
+        Logf.logfi logger "Downloading input file %s{InputFileName} to %s{DownloadedFileName}" inputFileName downloadedFile.FullName
 
-        Logf.logfi logger "Downloading file %s{InputFileName} to %s{DownloadedFileName}" inputFileName fullDownloadedFileName
+        do! blobClient.DownloadToAsync(downloadedFile.Path) |> Task.map ignore
 
-        do! blobClient.DownloadToAsync(downloadedFilePath) |> Task.map ignore
+        Logf.logfi logger "Input file %s{InputFileName} downloaded to %s{DownloadedFileName}" inputFileName downloadedFile.FullName
 
-        Logf.logfi logger "File %s{InputFileName} downloaded to %s{DownloadedFileName}" inputFileName fullDownloadedFileName
-
-        return FileInfo(downloadedFilePath)
+        return downloadedFile
       }
 
-  type UploadOutputFile = FileInfo -> Task<unit>
+  type UploadOutputFile = File -> Task<unit>
 
   let uploadOutputFile (getBlobContainer: GetContainerClient) logger : UploadOutputFile =
     let outputContainerClient = getBlobContainer Output
 
-    fun fileInfo ->
+    fun file ->
       task {
-        let outputBlobClient = outputContainerClient.GetBlobClient(fileInfo.Name)
+        let outputBlobClient = outputContainerClient.GetBlobClient(file.FullName)
 
-        Logf.logfi logger "Uploading file %s{ConvertedFileName}" fileInfo.Name
+        Logf.logfi logger "Uploading output file %s{ConvertedFileName}" file.FullName
 
-        do! outputBlobClient.UploadAsync(fileInfo.FullName, true) |> Task.map ignore
+        do! outputBlobClient.UploadAsync(file.Path, true) |> Task.map ignore
 
-        Logf.logfi logger "File %s{ConvertedFileName} uploaded" fileInfo.Name
+        Logf.logfi logger "Output file %s{ConvertedFileName} uploaded" file.FullName
       }
 
   type DeleteInputFile = string -> Task<unit>
@@ -264,13 +247,13 @@ module Storage =
 
     fun name ->
       task {
-        let outputBlobClient = inputContainerClient.GetBlobClient(name)
+        let inputBlobContainer = inputContainerClient.GetBlobClient(name)
 
-        Logf.logfi logger "Deleting file %s{InputFileName}" name
+        Logf.logfi logger "Deleting input file %s{InputFileName}" name
 
-        do! outputBlobClient.DeleteIfExistsAsync() |> Task.map ignore
+        do! inputBlobContainer.DeleteIfExistsAsync() |> Task.map ignore
 
-        Logf.logfi logger "File %s{InputFileName} deleted" name
+        Logf.logfi logger "Input file %s{InputFileName} deleted" name
       }
 
 [<RequireQualifiedAccess>]
@@ -307,13 +290,13 @@ module Workflows =
 
         do!
           match conversionResult with
-          | Ok outputFileInfo ->
+          | Ok outputFile ->
             task {
-              do! uploadOutputFile outputFileInfo
+              do! uploadOutputFile outputFile
               do! deleteInputFile inputMessage.Name
-              do deleteDownloadedFile inputFileInfo.FullName
-              do deleteConvertedFile outputFileInfo.FullName
-              do! sendSuccessMessage inputMessage.Id outputFileInfo.Name
+              do deleteDownloadedFile inputFileInfo.Path
+              do deleteConvertedFile outputFile.Path
+              do! sendSuccessMessage inputMessage.Id outputFile.FullName
             }
           | Result.Error FFMpeg.ConvertError -> sendFailureMessage inputMessage.Id
 
