@@ -14,7 +14,11 @@ module FFMpegConverter =
     let logger = loggerFactory.CreateLogger(nameof Converter.Convert)
 
     fun file ->
-      let targetExtension = settings.TargetExtension |> Option.ofObj |> Option.defaultValue file.Extension
+      let targetExtension =
+        settings.TargetExtension
+        |> Option.ofObj
+        |> Option.filter (String.IsNullOrEmpty >> not)
+        |> Option.defaultValue file.Extension
 
       let outputFile = File.create targetExtension
 
@@ -55,4 +59,3 @@ module FFMpegConverter =
       with e ->
         Logf.elogfe logger e "Error during file conversion:"
         Converter.ConvertError |> Error |> Task.FromResult
-

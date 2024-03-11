@@ -35,7 +35,7 @@ module RemoteStorage =
 
         do! blobClient.DownloadToAsync(downloadedFile.Path) |> Task.map ignore
 
-        Logf.logfi logger "Remove input file %s{InputFileName} downloaded to local %s{DownloadedFileName}" inputFileName downloadedFile.FullName
+        Logf.logfi logger "Remote input file %s{InputFileName} downloaded to local %s{DownloadedFileName}" inputFileName downloadedFile.FullName
 
         return downloadedFile
       }
