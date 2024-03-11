@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Core.fs"/>
+    <Compile Include="Settings.fs"/>
+    <Compile Include="Helpers.fs"/>
+    <Compile Include="Queue.fs"/>
+    <Compile Include="RemoteStorage.fs"/>
+    <Compile Include="LocalStorage.fs"/>
+    <Compile Include="FFMpegConverter.fs"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1"/>
+    <PackageReference Include="Azure.Storage.Queues" Version="12.17.1"/>
+    <PackageReference Include="FSharp.SystemTextJson" Version="1.2.42"/>
+    <PackageReference Include="shortid" Version="4.0.0"/>
+    <PackageReference Include="FSharp.Logf" Version="1.2.2"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\Domain.fsproj"/>
+  </ItemGroup>
+
+</Project>

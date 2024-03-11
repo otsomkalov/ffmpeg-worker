@@ -6,6 +6,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution files", "Solution 
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Domain", "Domain\Domain.fsproj", "{157D29E9-B9EC-4CA4-A4BF-384B83E2D4C1}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infrastructure", "Infrastructure\Infrastructure.fsproj", "{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,5 +20,13 @@ Global
 		{FBDAA8C1-44CF-4197-A156-6FB076159212}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FBDAA8C1-44CF-4197-A156-6FB076159212}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FBDAA8C1-44CF-4197-A156-6FB076159212}.Release|Any CPU.Build.0 = Release|Any CPU
+		{157D29E9-B9EC-4CA4-A4BF-384B83E2D4C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{157D29E9-B9EC-4CA4-A4BF-384B83E2D4C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{157D29E9-B9EC-4CA4-A4BF-384B83E2D4C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{157D29E9-B9EC-4CA4-A4BF-384B83E2D4C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

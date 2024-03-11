@@ -1,13 +1,8 @@
-namespace Worker.Domain
+﻿namespace Infrastructure.Core
 
 open System.IO
 open shortid
-
-type File =
-  { Name: string
-    FullName: string
-    Extension: string
-    Path: string }
+open Domain.Core
 
 [<RequireQualifiedAccess>]
 module File =
@@ -20,3 +15,4 @@ module File =
       FullName = fileNameWithExtension
       Extension = extension
       Path = filePath }
+
