@@ -7,6 +7,7 @@ open Azure.Storage.Queues
 open Azure.Storage.Queues.Models
 open FSharp
 open Infrastructure.Helpers
+open Microsoft.Extensions.Logging
 open otsom.fs.Extensions
 open Domain.Workflows
 
@@ -37,7 +38,8 @@ module Queue =
 
   type DeleteMessageFactory = string * string -> Queue.DeleteMessage
 
-  let deleteMessageFactory settings logger : DeleteMessageFactory =
+  let deleteMessageFactory settings (loggerFactory: ILoggerFactory) : DeleteMessageFactory =
+    let logger = loggerFactory.CreateLogger(nameof Queue.DeleteMessage)
     let getQueueClient = getQueueClient settings
     let inputQueueClient = getQueueClient Input
 
@@ -65,7 +67,9 @@ module Queue =
 
   type SendSuccessMessageFactory = string -> Queue.SendSuccessMessage
 
-  let sendSuccessMessageFactory settings logger : SendSuccessMessageFactory =
+  let sendSuccessMessageFactory settings (loggerFactory: ILoggerFactory) : SendSuccessMessageFactory =
+    let logger = loggerFactory.CreateLogger(nameof Queue.SendSuccessMessage)
+
     fun id ->
       fun name ->
         let message: ConversionResultMessage =
@@ -78,7 +82,9 @@ module Queue =
 
   type SendFailureMessageFactory = string -> Queue.SendFailureMessage
 
-  let sendFailureMessageFactory settings logger : SendFailureMessageFactory =
+  let sendFailureMessageFactory settings (loggerFactory: ILoggerFactory) : SendFailureMessageFactory =
+    let logger = loggerFactory.CreateLogger(nameof Queue.SendFailureMessage)
+
     fun id ->
       fun () ->
         let message: ConversionResultMessage =

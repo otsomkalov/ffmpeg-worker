@@ -42,14 +42,14 @@ module Program =
     services.AddHostedService<Worker.Worker>() |> ignore
 
     services
-      .BuildSingleton<RemoteStorage.DownloadFile, StorageSettings, ILogger>(RemoteStorage.downloadFile)
-      .BuildSingleton<RemoteStorage.UploadFile, StorageSettings, ILogger>(RemoteStorage.uploadFile)
-      .BuildSingleton<RemoteStorage.DeleteFile, StorageSettings, ILogger>(RemoteStorage.deleteFile)
-      .BuildSingleton<Converter.Convert, FFMpegSettings, ILogger>(FFMpegConverter.convert)
+      .BuildSingleton<RemoteStorage.DownloadFile, StorageSettings, ILoggerFactory>(RemoteStorage.downloadFile)
+      .BuildSingleton<RemoteStorage.UploadFile, StorageSettings, ILoggerFactory>(RemoteStorage.uploadFile)
+      .BuildSingleton<RemoteStorage.DeleteFile, StorageSettings, ILoggerFactory>(RemoteStorage.deleteFile)
+      .BuildSingleton<Converter.Convert, FFMpegSettings, ILoggerFactory>(FFMpegConverter.convert)
       .BuildSingleton<Queue.GetMessage, StorageSettings>(Queue.getMessage)
-      .BuildSingleton<Queue.DeleteMessageFactory, StorageSettings, ILogger>(Queue.deleteMessageFactory)
-      .BuildSingleton<Queue.SendSuccessMessageFactory, StorageSettings, ILogger>(Queue.sendSuccessMessageFactory)
-      .BuildSingleton<Queue.SendFailureMessageFactory, StorageSettings, ILogger>(Queue.sendFailureMessageFactory)
+      .BuildSingleton<Queue.DeleteMessageFactory, StorageSettings, ILoggerFactory>(Queue.deleteMessageFactory)
+      .BuildSingleton<Queue.SendSuccessMessageFactory, StorageSettings, ILoggerFactory>(Queue.sendSuccessMessageFactory)
+      .BuildSingleton<Queue.SendFailureMessageFactory, StorageSettings, ILoggerFactory>(Queue.sendFailureMessageFactory)
 
     services.AddApplicationInsightsTelemetryWorkerService()
 

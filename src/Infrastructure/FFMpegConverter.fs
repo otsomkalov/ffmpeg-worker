@@ -10,7 +10,9 @@ open Microsoft.Extensions.Logging
 open Domain.Workflows
 
 module FFMpegConverter =
-  let convert (settings: FFMpegSettings) (logger: ILogger) : Converter.Convert =
+  let convert (settings: FFMpegSettings) (loggerFactory: ILoggerFactory) : Converter.Convert =
+    let logger = loggerFactory.CreateLogger(nameof Converter.Convert)
+
     fun file ->
       let targetExtension = settings.TargetExtension |> Option.ofObj |> Option.defaultValue file.Extension
 

@@ -62,5 +62,4 @@ module Workflows =
       let convertFile = convertFile io
 
       fun req ->
-        raise (exn("Tst"))
         io.DownloadFile req.Name |> Task.bind convertFile

@@ -3,6 +3,7 @@
 open System.IO
 open Azure.Storage.Blobs
 open FSharp
+open Microsoft.Extensions.Logging
 open otsom.fs.Extensions
 open Domain.Workflows
 open Infrastructure.Core
@@ -20,7 +21,8 @@ module RemoteStorage =
     | Output -> storageSettings.Output.Container
     >> blobServiceClient.GetBlobContainerClient
 
-  let downloadFile settings logger : RemoteStorage.DownloadFile =
+  let downloadFile settings (loggerFactory: ILoggerFactory) : RemoteStorage.DownloadFile =
+    let logger = loggerFactory.CreateLogger(nameof RemoteStorage.DownloadFile)
     let getBlobContainer = getContainerClient settings
     let inputContainerClient = getBlobContainer Input
 
@@ -38,7 +40,8 @@ module RemoteStorage =
         return downloadedFile
       }
 
-  let uploadFile settings logger : RemoteStorage.UploadFile =
+  let uploadFile settings (loggerFactory: ILoggerFactory) : RemoteStorage.UploadFile =
+    let logger = loggerFactory.CreateLogger(nameof RemoteStorage.UploadFile)
     let getBlobContainer = getContainerClient settings
     let outputContainerClient = getBlobContainer Output
 
@@ -51,7 +54,8 @@ module RemoteStorage =
         Logf.logfi logger "Converted file %s{ConvertedFileName} uploaded" file.FullName
       }
 
-  let deleteFile settings logger : RemoteStorage.DeleteFile =
+  let deleteFile settings (loggerFactory: ILoggerFactory) : RemoteStorage.DeleteFile =
+    let logger = loggerFactory.CreateLogger(nameof RemoteStorage.DeleteFile)
     let getBlobContainer = getContainerClient settings
     let inputContainerClient = getBlobContainer Input
 
