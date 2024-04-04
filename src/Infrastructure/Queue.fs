@@ -49,9 +49,13 @@ module Queue =
 
         inputQueueClient.DeleteMessageAsync(id, popReceipt) |> Task.map ignore
 
+  type SuccessfulConversion = { Name: string }
+
+  type ConversionError = { Error: string }
+
   type ConversionResult =
-    | Success of name: string
-    | Error of error: string
+    | Success of SuccessfulConversion
+    | Error of ConversionError
 
   type ConversionResultMessage =
     { Id: string; Result: ConversionResult }
@@ -74,7 +78,7 @@ module Queue =
       fun name ->
         let message: ConversionResultMessage =
           { Id = id
-            Result = ConversionResult.Success name }
+            Result = ConversionResult.Success {Name = name } }
 
         Logf.logfi logger "Sending successful conversion result message"
 
@@ -89,7 +93,7 @@ module Queue =
       fun () ->
         let message: ConversionResultMessage =
           { Id = id
-            Result = ConversionResult.Error "Error during conversion!" }
+            Result = ConversionResult.Error {Error = "Error during conversion!" } }
 
         Logf.logfi logger "Sending conversion result error message"
 

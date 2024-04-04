@@ -13,7 +13,7 @@ module Option =
 
 module JSON =
   let private options =
-    JsonFSharpOptions.Default().WithUnionUntagged().ToJsonSerializerOptions()
+    JsonFSharpOptions.Default().WithUnionExternalTag().WithUnionUnwrapRecordCases().ToJsonSerializerOptions()
 
   let serialize value =
     JsonSerializer.Serialize(value, options)
