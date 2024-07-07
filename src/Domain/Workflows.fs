@@ -38,28 +38,24 @@ module Workflows =
         SendFailureMessage: Queue.SendFailureMessage
         DeleteInputMessage: Queue.DeleteMessage }
 
-    let private convertFile io =
-      fun inputFile ->
-        io.Convert inputFile
-        |> Task.bind (function
-          | Ok outputFile ->
-            task {
-              do! io.UploadFile outputFile
-              do! io.DeleteRemoteFile inputFile.FullName
-              do io.DeleteLocalFile inputFile
-              do io.DeleteLocalFile outputFile
-              do! io.SendSuccessMessage outputFile.FullName
-              do! io.DeleteInputMessage()
-            }
-          | Result.Error Converter.ConvertError ->
-            task {
-              do io.DeleteLocalFile inputFile
-              do! io.SendFailureMessage()
-              do! io.DeleteInputMessage()
-            })
-
     let run (io: RunIO) : Conversion.Run =
-      let convertFile = convertFile io
-
       fun req ->
-        io.DownloadFile req.Name |> Task.bind convertFile
+        io.DownloadFile req.Name
+        |> Task.bind (fun inputFile ->
+          io.Convert inputFile
+          |> Task.bind (function
+            | Ok outputFile ->
+              task {
+                do! io.UploadFile outputFile
+                do! io.DeleteRemoteFile req.Name
+                do io.DeleteLocalFile inputFile
+                do io.DeleteLocalFile outputFile
+                do! io.SendSuccessMessage outputFile.FullName
+                do! io.DeleteInputMessage()
+              }
+            | Result.Error Converter.ConvertError ->
+              task {
+                do io.DeleteLocalFile inputFile
+                do! io.SendFailureMessage()
+                do! io.DeleteInputMessage()
+              }))
