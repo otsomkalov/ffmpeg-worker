@@ -42,7 +42,12 @@ steps:
       command: 'test'
       configuration: 'Release'
       projects: 'tests/**/*.fsproj'
-      arguments: '-r $(Runtime)'
+      arguments: '-r $(Runtime) --collect:"XPlat Code Coverage"'
+  - task: PublishCodeCoverageResults@1
+    displayName: 'Publish coverage'
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: '**/coverage.cobertura.xml # using ** instead of * finds duplicate coverage files
   - task: DotNetCoreCLI@2
     name: Publish
     inputs:
