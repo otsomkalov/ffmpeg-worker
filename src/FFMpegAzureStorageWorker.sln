@@ -10,6 +10,10 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Domain", "Domain\Domain.fsp
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infrastructure", "Infrastructure\Infrastructure.fsproj", "{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{574BBC0F-EE9D-4A3A-B1AE-87D474FC7E5B}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Domain.Tests", "..\tests\Domain.Tests\Domain.Tests.fsproj", "{3F324E72-4FD9-41B1-AFDA-B7F5851DC641}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,5 +32,12 @@ Global
 		{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C5669DC-A6ED-420F-89BE-AB306C46D8A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F324E72-4FD9-41B1-AFDA-B7F5851DC641}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F324E72-4FD9-41B1-AFDA-B7F5851DC641}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F324E72-4FD9-41B1-AFDA-B7F5851DC641}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F324E72-4FD9-41B1-AFDA-B7F5851DC641}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3F324E72-4FD9-41B1-AFDA-B7F5851DC641} = {574BBC0F-EE9D-4A3A-B1AE-87D474FC7E5B}
 	EndGlobalSection
 EndGlobal
