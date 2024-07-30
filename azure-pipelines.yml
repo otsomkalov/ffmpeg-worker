@@ -25,13 +25,13 @@ steps:
     name: Restore
     inputs:
       command: 'restore'
-      projects: 'src/**/*.fsproj'
+      projects: '**/*.fsproj'
       arguments: '-r $(Runtime)'
   - task: DotNetCoreCLI@2
     name: Build
     inputs:
       command: 'build'
-      projects: 'src/**/*.fsproj'
+      projects: '**/*.fsproj'
       arguments: '-r $(Runtime)'
       publishWebProjects: false
   - task: DotNetCoreCLI@2
