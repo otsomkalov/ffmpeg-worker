@@ -57,9 +57,11 @@ type Worker
 
     task {
       use activity =
-        (new Activity(appSettings.Name)).SetParentId(inputMessage.OperationId)
+        (new Activity("Convert")).SetParentId(inputMessage.OperationId)
 
       use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
+
+      operation.Telemetry.Context.Cloud.RoleName <- appSettings.Name
 
       try
         do! convert data
