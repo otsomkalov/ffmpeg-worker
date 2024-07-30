@@ -17,6 +17,8 @@ module Queue =
     | Input
     | Output
 
+  type BaseMessage<'a> = { OperationId: string; Data: 'a }
+
   let getQueueClient (settings: Settings.StorageSettings) =
     let queueServiceClient = QueueServiceClient(settings.ConnectionString)
 
@@ -69,31 +71,35 @@ module Queue =
   [<JsonFSharpConverter>]
   type OutputMessage = { Id: string; Name: string }
 
-  type SendSuccessMessageFactory = string -> Queue.SendSuccessMessage
+  type SendSuccessMessageFactory = string -> string -> Queue.SendSuccessMessage
 
   let sendSuccessMessageFactory settings (loggerFactory: ILoggerFactory) : SendSuccessMessageFactory =
     let logger = loggerFactory.CreateLogger(nameof Queue.SendSuccessMessage)
 
-    fun id ->
+    fun operationId conversionId ->
       fun name ->
-        let message: ConversionResultMessage =
-          { Id = id
-            Result = ConversionResult.Success {Name = name } }
+        let message: BaseMessage<ConversionResultMessage> =
+          { OperationId = operationId
+            Data =
+              { Id = conversionId
+                Result = ConversionResult.Success { Name = name } } }
 
         Logf.logfi logger "Sending successful conversion result message"
 
         sendOutputMessage settings message
 
-  type SendFailureMessageFactory = string -> Queue.SendFailureMessage
+  type SendFailureMessageFactory = string -> string -> Queue.SendFailureMessage
 
   let sendFailureMessageFactory settings (loggerFactory: ILoggerFactory) : SendFailureMessageFactory =
     let logger = loggerFactory.CreateLogger(nameof Queue.SendFailureMessage)
 
-    fun id ->
+    fun operationId conversionId ->
       fun () ->
-        let message: ConversionResultMessage =
-          { Id = id
-            Result = ConversionResult.Error {Error = "Error during conversion!" } }
+        let message: BaseMessage<ConversionResultMessage> =
+          { OperationId = operationId
+            Data =
+              { Id = conversionId
+                Result = ConversionResult.Error { Error = "Error during conversion!" } } }
 
         Logf.logfi logger "Sending conversion result error message"
 

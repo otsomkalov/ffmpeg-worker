@@ -1,5 +1,6 @@
 ﻿namespace Worker
 
+open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
 open Azure.Storage.Queues.Models
@@ -32,10 +33,15 @@ type Worker
   inherit BackgroundService()
 
   let processQueueMessage (queueMessage: QueueMessage) =
-    let inputMessage = JSON.deserialize<Conversion.Request> queueMessage.MessageText
-    let sendSuccessMessage = sendSuccessMessageFactory  inputMessage.Id
-    let sendFailureMessage = sendFailureMessageFactory inputMessage.Id
-    let deleteMessage = deleteMessageFactory (queueMessage.MessageId, queueMessage.PopReceipt)
+    let inputMessage =
+      JSON.deserialize<Queue.BaseMessage<Conversion.Request>> queueMessage.MessageText
+
+    let data = inputMessage.Data
+    let sendSuccessMessage = sendSuccessMessageFactory inputMessage.OperationId data.Id
+    let sendFailureMessage = sendFailureMessageFactory inputMessage.OperationId data.Id
+
+    let deleteMessage =
+      deleteMessageFactory (queueMessage.MessageId, queueMessage.PopReceipt)
 
     let io: Conversion.RunIO =
       { DownloadFile = downloadFile
@@ -50,10 +56,13 @@ type Worker
     let convert = Conversion.run io
 
     task {
-      use operation = telemetryClient.StartOperation<RequestTelemetry>(appSettings.Name)
+      use activity =
+        (new Activity(appSettings.Name)).SetParentId(inputMessage.OperationId)
+
+      use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
 
       try
-        do! convert inputMessage
+        do! convert data
 
         operation.Telemetry.Success <- true
       with e ->
