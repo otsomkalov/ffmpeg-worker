@@ -6,6 +6,8 @@ open Azure.Storage.Queues.Models
 open Domain.Core
 open FSharp
 open Infrastructure
+open Microsoft.ApplicationInsights
+open Microsoft.ApplicationInsights.DataContracts
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Infrastructure.Helpers
@@ -24,7 +26,8 @@ type Worker
     getMessage: Queue.GetMessage,
     deleteMessageFactory: Queue.DeleteMessageFactory,
     sendSuccessMessageFactory: Queue.SendSuccessMessageFactory,
-    sendFailureMessageFactory: Queue.SendFailureMessageFactory
+    sendFailureMessageFactory: Queue.SendFailureMessageFactory,
+    telemetryClient: TelemetryClient
   ) =
   inherit BackgroundService()
 
@@ -47,12 +50,17 @@ type Worker
     let convert = Conversion.run io
 
     task {
+      use operation = telemetryClient.StartOperation<RequestTelemetry>(appSettings.Name)
+
       try
         do! convert inputMessage
+
+        operation.Telemetry.Success <- true
       with e ->
         Logf.elogfe logger e "Error during processing queue message:"
         do! deleteMessage ()
         do! sendFailureMessage ()
+        operation.Telemetry.Success <- false
     }
 
   let runWorker () =
