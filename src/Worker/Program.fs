@@ -38,10 +38,6 @@ module Program =
 
     services
       .BuildSingleton<Converter.Convert, FFMpegSettings, ILoggerFactory>(FFMpegConverter.convert)
-      .BuildSingleton<Queue.GetMessage, StorageSettings>(Queue.getMessage)
-      .BuildSingleton<Queue.DeleteMessageFactory, StorageSettings, ILoggerFactory>(Queue.deleteMessageFactory)
-      .BuildSingleton<Queue.SendSuccessMessageFactory, StorageSettings, ILoggerFactory>(Queue.sendSuccessMessageFactory)
-      .BuildSingleton<Queue.SendFailureMessageFactory, StorageSettings, ILoggerFactory>(Queue.sendFailureMessageFactory)
 
     services.AddApplicationInsightsTelemetryWorkerService()
 
