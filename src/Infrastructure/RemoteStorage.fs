@@ -13,18 +13,15 @@ module RemoteStorage =
     | Input
     | Output
 
-  let getContainerClient (storageSettings: Settings.StorageSettings) =
-    let blobServiceClient = BlobServiceClient(storageSettings.ConnectionString)
-
+  let getContainerClient (client: BlobServiceClient) (storageSettings: Settings.StorageSettings) =
     function
     | Input -> storageSettings.Input.Container
     | Output -> storageSettings.Output.Container
-    >> blobServiceClient.GetBlobContainerClient
+    >> client.GetBlobContainerClient
 
-  let downloadFile settings (loggerFactory: ILoggerFactory) : RemoteStorage.DownloadFile =
+  let downloadFile client settings (loggerFactory: ILoggerFactory) : RemoteStorage.DownloadFile =
     let logger = loggerFactory.CreateLogger(nameof RemoteStorage.DownloadFile)
-    let getBlobContainer = getContainerClient settings
-    let inputContainerClient = getBlobContainer Input
+    let inputContainerClient = getContainerClient client settings Input
 
     fun inputFileName ->
       task {
@@ -40,10 +37,9 @@ module RemoteStorage =
         return downloadedFile
       }
 
-  let uploadFile settings (loggerFactory: ILoggerFactory) : RemoteStorage.UploadFile =
+  let uploadFile client settings (loggerFactory: ILoggerFactory) : RemoteStorage.UploadFile =
     let logger = loggerFactory.CreateLogger(nameof RemoteStorage.UploadFile)
-    let getBlobContainer = getContainerClient settings
-    let outputContainerClient = getBlobContainer Output
+    let outputContainerClient = getContainerClient client settings Output
 
     fun file ->
       task {
@@ -54,10 +50,9 @@ module RemoteStorage =
         Logf.logfi logger "Converted file %s{ConvertedFileName} uploaded" file.FullName
       }
 
-  let deleteFile settings (loggerFactory: ILoggerFactory) : RemoteStorage.DeleteFile =
+  let deleteFile client settings (loggerFactory: ILoggerFactory) : RemoteStorage.DeleteFile =
     let logger = loggerFactory.CreateLogger(nameof RemoteStorage.DeleteFile)
-    let getBlobContainer = getContainerClient settings
-    let inputContainerClient = getBlobContainer Input
+    let inputContainerClient = getContainerClient client settings Input
 
     fun name ->
       task {

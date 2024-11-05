@@ -27,24 +27,16 @@ module Program =
 
     QueueServiceClient(settings.ConnectionString)
 
-  let private configureServices _ (services: IServiceCollection) =
+  let private configureServices (ctx: HostBuilderContext) (services: IServiceCollection) =
     services
       .BuildSingleton<AppSettings, IConfiguration>(fun cfg -> cfg.Get<AppSettings>())
-      .BuildSingleton<FFMpegSettings, IConfiguration>(fun cfg ->
-        cfg
-          .GetSection(FFMpegSettings.SectionName)
-          .Get<FFMpegSettings>())
-      .BuildSingleton<StorageSettings, IConfiguration>(fun cfg ->
-        cfg
-          .GetSection(StorageSettings.SectionName)
-          .Get<StorageSettings>())
+      .BuildSingleton<FFMpegSettings, IConfiguration>(fun cfg -> cfg.GetSection(FFMpegSettings.SectionName).Get<FFMpegSettings>())
+
+    services |> Startup.addIntegrationsCore ctx.Configuration
 
     services.AddHostedService<Worker.Worker>() |> ignore
 
     services
-      .BuildSingleton<RemoteStorage.DownloadFile, StorageSettings, ILoggerFactory>(RemoteStorage.downloadFile)
-      .BuildSingleton<RemoteStorage.UploadFile, StorageSettings, ILoggerFactory>(RemoteStorage.uploadFile)
-      .BuildSingleton<RemoteStorage.DeleteFile, StorageSettings, ILoggerFactory>(RemoteStorage.deleteFile)
       .BuildSingleton<Converter.Convert, FFMpegSettings, ILoggerFactory>(FFMpegConverter.convert)
       .BuildSingleton<Queue.GetMessage, StorageSettings>(Queue.getMessage)
       .BuildSingleton<Queue.DeleteMessageFactory, StorageSettings, ILoggerFactory>(Queue.deleteMessageFactory)
