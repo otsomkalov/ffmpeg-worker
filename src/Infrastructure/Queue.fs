@@ -19,16 +19,10 @@ module Queue =
 
   type BaseMessage<'a> = { OperationId: string; Data: 'a }
 
-  let getQueueClient (queueServiceClient: QueueServiceClient) (settings: Settings.StorageSettings) =
-    function
-    | Input -> settings.Input.Container
-    | Output -> settings.Output.Container
-    >> queueServiceClient.GetQueueClient
-
   type GetMessage = unit -> Task<QueueMessage option>
 
-  let getMessage client settings : GetMessage =
-    let inputQueueClient = getQueueClient client settings Input
+  let getMessage (client: QueueServiceClient) (settings: Settings.StorageSettings) : GetMessage =
+    let inputQueueClient = client.GetQueueClient settings.Input.Queue
 
     inputQueueClient.ReceiveMessageAsync
     >> Task.map Option.ofObj
@@ -37,9 +31,9 @@ module Queue =
 
   type DeleteMessageFactory = string * string -> Queue.DeleteMessage
 
-  let deleteMessageFactory client settings (loggerFactory: ILoggerFactory) : DeleteMessageFactory =
+  let deleteMessageFactory (client: QueueServiceClient) (settings: Settings.StorageSettings) (loggerFactory: ILoggerFactory) : DeleteMessageFactory =
     let logger = loggerFactory.CreateLogger(nameof Queue.DeleteMessage)
-    let inputQueueClient = getQueueClient client settings Input
+    let inputQueueClient = client.GetQueueClient settings.Input.Queue
 
     fun (id, popReceipt) ->
       fun () ->
@@ -58,8 +52,8 @@ module Queue =
   type ConversionResultMessage =
     { Id: string; Result: ConversionResult }
 
-  let private sendOutputMessage client settings =
-    let outputQueueClient = getQueueClient client settings Output
+  let private sendOutputMessage (client: QueueServiceClient) (settings: Settings.StorageSettings) =
+    let outputQueueClient = client.GetQueueClient(settings.Output.Queue)
 
     JSON.serialize >> outputQueueClient.SendMessageAsync >> Task.map ignore
 
@@ -68,7 +62,7 @@ module Queue =
 
   type SendSuccessMessageFactory = string -> string -> Queue.SendSuccessMessage
 
-  let sendSuccessMessageFactory client settings (loggerFactory: ILoggerFactory) : SendSuccessMessageFactory =
+  let sendSuccessMessageFactory (client: QueueServiceClient) (settings: Settings.StorageSettings) (loggerFactory: ILoggerFactory) : SendSuccessMessageFactory =
     let logger = loggerFactory.CreateLogger(nameof Queue.SendSuccessMessage)
 
     fun operationId conversionId ->
@@ -85,7 +79,7 @@ module Queue =
 
   type SendFailureMessageFactory = string -> string -> Queue.SendFailureMessage
 
-  let sendFailureMessageFactory client settings (loggerFactory: ILoggerFactory) : SendFailureMessageFactory =
+  let sendFailureMessageFactory (client: QueueServiceClient) (settings: Settings.StorageSettings) (loggerFactory: ILoggerFactory) : SendFailureMessageFactory =
     let logger = loggerFactory.CreateLogger(nameof Queue.SendFailureMessage)
 
     fun operationId conversionId ->
