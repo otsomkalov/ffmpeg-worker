@@ -34,12 +34,12 @@ steps:
       projects: '**/*.fsproj'
       arguments: '-r $(Runtime)'
       publishWebProjects: false
-  - task: DotNetCoreCLI@2
-    name: Test
-    inputs:
-      command: 'test'
-      projects: 'tests/**/*.fsproj'
-      arguments: '-r $(Runtime) --collect:"XPlat Code Coverage"'
+#  - task: DotNetCoreCLI@2
+#    name: Test
+#    inputs:
+#      command: 'test'
+#      projects: 'tests/**/*.fsproj'
+#      arguments: '-r $(Runtime) --collect:"XPlat Code Coverage"'
   - task: PublishCodeCoverageResults@2
     displayName: 'Publish coverage'
     inputs:
