@@ -2,74 +2,78 @@ module Conversion
 
 open System.Threading.Tasks
 open Domain.Core
+open Domain.Repos
 open Domain.Workflows
+open Moq
 open Xunit
 open FsUnit.Xunit
 
-let request: Conversion.Request = { Id = "test-id"; Name = "test.webm" }
+type Conversion() =
+  let request: Conversion.Request = { Id = "test-id"; Name = "test.webm" }
 
-let inputFile: File =
-  { Name = "input"
-    FullName = "input.webm"
-    Extension = "webm"
-    Path = "C:/input.webm" }
+  let inputFile: File =
+    { Name = "input"
+      FullName = "input.webm"
+      Extension = "webm"
+      Path = "C:/input.webm" }
 
-let convertedFile: File =
-  { Name = "output"
-    FullName = "output.mp4"
-    Extension = "mp4"
-    Path = "C:/output.mp4" }
+  let convertedFile: File =
+    { Name = "output"
+      FullName = "output.mp4"
+      Extension = "mp4"
+      Path = "C:/output.mp4" }
 
-let io: Conversion.RunIO =
-  { DownloadFile =
-      fun name ->
-        name |> should equal request.Name
+  let remoteStorage = Mock<IRemoteStorage>()
 
-        inputFile |> Task.FromResult
-    Convert =
-      fun file ->
-        file |> should equal inputFile
+  do
+    remoteStorage.Setup(_.DownloadFile(request.Name)).ReturnsAsync(inputFile)
+    |> ignore
 
-        convertedFile |> Result.Ok |> Task.FromResult
-    UploadFile =
-      fun file ->
-        file |> should equal convertedFile
+  do remoteStorage.Setup(_.UploadFile(convertedFile)).ReturnsAsync(()) |> ignore
+  do remoteStorage.Setup(_.DeleteFile(request.Name)).ReturnsAsync(()) |> ignore
 
-        Task.FromResult()
-    DeleteRemoteFile =
-      fun file ->
-        file |> should equal request.Name
+  let io: Conversion.RunIO =
+    { Convert =
+        fun file ->
+          file |> should equal inputFile
 
-        Task.FromResult()
-    DeleteLocalFile = fun file -> [ inputFile; convertedFile ] |> should contain file
-    SendSuccessMessage =
-      fun file ->
-        file |> should equal convertedFile.FullName
+          convertedFile |> Result.Ok |> Task.FromResult
+      DeleteLocalFile = fun file -> [ inputFile; convertedFile ] |> should contain file
+      SendSuccessMessage =
+        fun file ->
+          file |> should equal convertedFile.FullName
 
-        Task.FromResult()
-    SendFailureMessage = fun _ -> failwith "todo"
-    DeleteInputMessage = fun _ -> Task.FromResult() }
+          Task.FromResult()
+      SendFailureMessage = fun _ -> failwith "todo"
+      DeleteInputMessage = fun _ -> Task.FromResult() }
 
-[<Fact>]
-let ``run should send success message and cleanup local and remote files on success`` () =
-  let sut = Conversion.run io
+  [<Fact>]
+  let ``run should send success message and cleanup local and remote files on success`` () =
+    let sut = Conversion.run remoteStorage.Object io
 
-  sut request
+    task {
+      do! sut request
 
-[<Fact>]
-let ``run should send failure message and cleanup downloaded files on failure`` () =
-  let io =
-    { io with
-        Convert =
-          fun file ->
-            file |> should equal inputFile
+      remoteStorage.VerifyAll()
+    }
 
-            Converter.ConvertError |> Result.Error |> Task.FromResult
-        SendFailureMessage = fun _ -> Task.FromResult()
-        SendSuccessMessage = fun _ -> failwith "todo"
-        UploadFile = fun _ -> failwith "todo"
-        DeleteRemoteFile = fun _ -> failwith "todo" }
+  [<Fact>]
+  let ``run should send failure message and cleanup downloaded files on failure`` () =
+    let io =
+      { io with
+          Convert =
+            fun file ->
+              file |> should equal inputFile
 
-  let sut = Conversion.run io
+              Converter.ConvertError |> Result.Error |> Task.FromResult
+          SendFailureMessage = fun _ -> Task.FromResult()
+          SendSuccessMessage = fun _ -> failwith "todo" }
 
-  sut request
+    let sut = Conversion.run remoteStorage.Object io
+
+    task {
+      do! sut request
+
+      remoteStorage.Verify(_.DownloadFile(request.Name))
+      remoteStorage.VerifyNoOtherCalls()
+    }

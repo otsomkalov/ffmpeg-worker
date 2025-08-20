@@ -3,14 +3,9 @@
 open System.Threading.Tasks
 open Domain.Core
 open otsom.fs.Extensions
+open Domain
 
 module Workflows =
-  [<RequireQualifiedAccess>]
-  module RemoteStorage =
-    type DownloadFile = string -> Task<File>
-    type UploadFile = File -> Task<unit>
-    type DeleteFile = string -> Task<unit>
-
   [<RequireQualifiedAccess>]
   module LocalStorage =
     type DeleteFile = File -> unit
@@ -29,25 +24,22 @@ module Workflows =
   [<RequireQualifiedAccess>]
   module Conversion =
     type RunIO =
-      { DownloadFile: RemoteStorage.DownloadFile
-        Convert: Converter.Convert
-        UploadFile: RemoteStorage.UploadFile
-        DeleteRemoteFile: RemoteStorage.DeleteFile
+      { Convert: Converter.Convert
         DeleteLocalFile: LocalStorage.DeleteFile
         SendSuccessMessage: Queue.SendSuccessMessage
         SendFailureMessage: Queue.SendFailureMessage
         DeleteInputMessage: Queue.DeleteMessage }
 
-    let run (io: RunIO) : Conversion.Run =
+    let run (remoteStorage: Repos.IRemoteStorage) (io: RunIO) : Conversion.Run =
       fun req ->
-        io.DownloadFile req.Name
+        remoteStorage.DownloadFile req.Name
         |> Task.bind (fun inputFile ->
           io.Convert inputFile
           |> Task.bind (function
             | Ok outputFile ->
               task {
-                do! io.UploadFile outputFile
-                do! io.DeleteRemoteFile req.Name
+                do! remoteStorage.UploadFile outputFile
+                do! remoteStorage.DeleteFile req.Name
                 do io.DeleteLocalFile inputFile
                 do io.DeleteLocalFile outputFile
                 do! io.SendSuccessMessage outputFile.FullName

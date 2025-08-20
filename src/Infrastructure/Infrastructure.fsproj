@@ -10,9 +10,9 @@
     <Compile Include="Settings.fs"/>
     <Compile Include="Helpers.fs"/>
     <Compile Include="Queue.fs"/>
-    <Compile Include="RemoteStorage.fs"/>
     <Compile Include="LocalStorage.fs"/>
     <Compile Include="FFMpegConverter.fs"/>
+    <Compile Include="AzureRemoteStorage.fs" />
     <Compile Include="Startup.fs"/>
   </ItemGroup>
 

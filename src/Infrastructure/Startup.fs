@@ -7,10 +7,9 @@ open Azure.Storage.Queues
 open Infrastructure.Settings
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
 open otsom.fs.Extensions.DependencyInjection
-open Domain.Workflows
+open Domain.Repos
 
 let addIntegrationsCore (cfg: IConfiguration) (services: IServiceCollection) =
   services.Configure<StorageSettings>(cfg.GetSection(StorageSettings.SectionName))
@@ -21,7 +20,4 @@ let addIntegrationsCore (cfg: IConfiguration) (services: IServiceCollection) =
     .BuildSingleton<BlobServiceClient, StorageSettings>(fun cfg -> BlobServiceClient(cfg.ConnectionString))
     .BuildSingleton<QueueServiceClient, StorageSettings>(fun cfg -> QueueServiceClient(cfg.ConnectionString))
 
-  services
-    .BuildSingleton<RemoteStorage.DownloadFile, BlobServiceClient, StorageSettings, ILoggerFactory>(RemoteStorage.downloadFile)
-    .BuildSingleton<RemoteStorage.UploadFile, BlobServiceClient, StorageSettings, ILoggerFactory>(RemoteStorage.uploadFile)
-    .BuildSingleton<RemoteStorage.DeleteFile, BlobServiceClient, StorageSettings, ILoggerFactory>(RemoteStorage.deleteFile)
+  services.AddSingleton<IRemoteStorage, AzureRemoteStorage>()

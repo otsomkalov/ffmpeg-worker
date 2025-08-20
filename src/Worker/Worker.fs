@@ -4,6 +4,7 @@ open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
 open Azure.Storage.Queues.Models
+open Domain
 open Domain.Core
 open FSharp
 open Infrastructure
@@ -20,9 +21,7 @@ type Worker
   (
     logger: ILogger<Worker>,
     appSettings: AppSettings,
-    downloadFile: RemoteStorage.DownloadFile,
-    uploadFile: RemoteStorage.UploadFile,
-    deleteRemoteFile: RemoteStorage.DeleteFile,
+    remoteStorage: Repos.IRemoteStorage,
     convertFile: Converter.Convert,
     getMessage: Queue.GetMessage,
     deleteMessageFactory: Queue.DeleteMessageFactory,
@@ -44,16 +43,13 @@ type Worker
       deleteMessageFactory (queueMessage.MessageId, queueMessage.PopReceipt)
 
     let io: Conversion.RunIO =
-      { DownloadFile = downloadFile
-        Convert = convertFile
-        UploadFile = uploadFile
+      { Convert = convertFile
         DeleteLocalFile = LocalStorage.deleteFile
-        DeleteRemoteFile = deleteRemoteFile
         SendFailureMessage = sendFailureMessage
         SendSuccessMessage = sendSuccessMessage
         DeleteInputMessage = deleteMessage }
 
-    let convert = Conversion.run io
+    let convert = Conversion.run remoteStorage io
 
     task {
       use activity =
