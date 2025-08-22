@@ -29,8 +29,8 @@ module Program =
 
   let private configureServices (ctx: HostBuilderContext) (services: IServiceCollection) =
     services
-      .BuildSingleton<AppSettings, IConfiguration>(fun cfg -> cfg.Get<AppSettings>())
-      .BuildSingleton<FFMpegSettings, IConfiguration>(fun cfg -> cfg.GetSection(FFMpegSettings.SectionName).Get<FFMpegSettings>())
+      .BuildSingleton<AppSettings, IConfiguration>(_.Get<AppSettings>())
+      .BuildSingleton<FFMpegSettings, IConfiguration>(_.GetSection(FFMpegSettings.SectionName).Get<FFMpegSettings>())
 
     services |> Startup.addIntegrationsCore ctx.Configuration
 
@@ -38,10 +38,6 @@ module Program =
 
     services
       .BuildSingleton<Converter.Convert, FFMpegSettings, ILoggerFactory>(FFMpegConverter.convert)
-      .BuildSingleton<Queue.GetMessage, StorageSettings>(Queue.getMessage)
-      .BuildSingleton<Queue.DeleteMessageFactory, StorageSettings, ILoggerFactory>(Queue.deleteMessageFactory)
-      .BuildSingleton<Queue.SendSuccessMessageFactory, StorageSettings, ILoggerFactory>(Queue.sendSuccessMessageFactory)
-      .BuildSingleton<Queue.SendFailureMessageFactory, StorageSettings, ILoggerFactory>(Queue.sendFailureMessageFactory)
 
     services.AddApplicationInsightsTelemetryWorkerService()
 

@@ -8,3 +8,17 @@ module Repos =
     abstract DownloadFile: string -> Task<File>
     abstract UploadFile: File -> Task<unit>
     abstract DeleteFile: string -> Task<unit>
+
+  type QueueMessage =
+    { Id: string
+      PopReceipt: string
+      Body: string }
+
+  type IMessageClient =
+    abstract Delete: unit -> Task<unit>
+
+  type IQueue =
+    abstract GetMessage: unit -> Task<QueueMessage option>
+    abstract SendSuccessMessage: string -> Task<unit>
+    abstract SendFailureMessage: unit -> Task<unit>
+    abstract GetMessageClient: string * string -> IMessageClient

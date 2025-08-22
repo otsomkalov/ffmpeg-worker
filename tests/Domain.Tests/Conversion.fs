@@ -32,24 +32,29 @@ type Conversion() =
   do remoteStorage.Setup(_.UploadFile(convertedFile)).ReturnsAsync(()) |> ignore
   do remoteStorage.Setup(_.DeleteFile(request.Name)).ReturnsAsync(()) |> ignore
 
+  let queue = Mock<IQueue>()
+
+  do
+    queue.Setup(_.SendSuccessMessage(convertedFile.FullName)).ReturnsAsync(())
+    |> ignore
+
+  do queue.Setup(_.SendFailureMessage()).ReturnsAsync(()) |> ignore
+
+  let msgClient = Mock<IMessageClient>()
+
+  do msgClient.Setup(_.Delete()).ReturnsAsync(()) |> ignore
+
   let io: Conversion.RunIO =
     { Convert =
         fun file ->
           file |> should equal inputFile
 
           convertedFile |> Result.Ok |> Task.FromResult
-      DeleteLocalFile = fun file -> [ inputFile; convertedFile ] |> should contain file
-      SendSuccessMessage =
-        fun file ->
-          file |> should equal convertedFile.FullName
-
-          Task.FromResult()
-      SendFailureMessage = fun _ -> failwith "todo"
-      DeleteInputMessage = fun _ -> Task.FromResult() }
+      DeleteLocalFile = fun file -> [ inputFile; convertedFile ] |> should contain file }
 
   [<Fact>]
   let ``run should send success message and cleanup local and remote files on success`` () =
-    let sut = Conversion.run remoteStorage.Object io
+    let sut = Conversion.run remoteStorage.Object queue.Object msgClient.Object io
 
     task {
       do! sut request
@@ -65,11 +70,9 @@ type Conversion() =
             fun file ->
               file |> should equal inputFile
 
-              Converter.ConvertError |> Result.Error |> Task.FromResult
-          SendFailureMessage = fun _ -> Task.FromResult()
-          SendSuccessMessage = fun _ -> failwith "todo" }
+              Converter.ConvertError |> Result.Error |> Task.FromResult }
 
-    let sut = Conversion.run remoteStorage.Object io
+    let sut = Conversion.run remoteStorage.Object queue.Object msgClient.Object io
 
     task {
       do! sut request

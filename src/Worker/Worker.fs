@@ -3,9 +3,8 @@
 open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
-open Azure.Storage.Queues.Models
-open Domain
 open Domain.Core
+open Domain.Repos
 open FSharp
 open Infrastructure
 open Microsoft.ApplicationInsights
@@ -21,35 +20,26 @@ type Worker
   (
     logger: ILogger<Worker>,
     appSettings: AppSettings,
-    remoteStorage: Repos.IRemoteStorage,
+    remoteStorage: IRemoteStorage,
     convertFile: Converter.Convert,
-    getMessage: Queue.GetMessage,
-    deleteMessageFactory: Queue.DeleteMessageFactory,
-    sendSuccessMessageFactory: Queue.SendSuccessMessageFactory,
-    sendFailureMessageFactory: Queue.SendFailureMessageFactory,
-    telemetryClient: TelemetryClient
+    telemetryClient: TelemetryClient,
+    queue: IQueue
   ) =
   inherit BackgroundService()
 
   let processQueueMessage (queueMessage: QueueMessage) =
     let inputMessage =
-      JSON.deserialize<Queue.BaseMessage<Conversion.Request>> queueMessage.MessageText
+      JSON.deserialize<BaseMessage<Conversion.Request>> queueMessage.Body
 
     let data = inputMessage.Data
-    let sendSuccessMessage = sendSuccessMessageFactory inputMessage.OperationId data.Id
-    let sendFailureMessage = sendFailureMessageFactory inputMessage.OperationId data.Id
-
-    let deleteMessage =
-      deleteMessageFactory (queueMessage.MessageId, queueMessage.PopReceipt)
 
     let io: Conversion.RunIO =
       { Convert = convertFile
-        DeleteLocalFile = LocalStorage.deleteFile
-        SendFailureMessage = sendFailureMessage
-        SendSuccessMessage = sendSuccessMessage
-        DeleteInputMessage = deleteMessage }
+        DeleteLocalFile = LocalStorage.deleteFile }
 
-    let convert = Conversion.run remoteStorage io
+    let msgClient = queue.GetMessageClient(queueMessage.Id, queueMessage.PopReceipt)
+
+    let convert = Conversion.run remoteStorage queue msgClient io
 
     task {
       use activity =
@@ -65,13 +55,13 @@ type Worker
         operation.Telemetry.Success <- true
       with e ->
         Logf.elogfe logger e "Error during processing queue message:"
-        do! deleteMessage ()
-        do! sendFailureMessage ()
+        do! msgClient.Delete()
+        do! queue.SendFailureMessage()
         operation.Telemetry.Success <- false
     }
 
   let runWorker () =
-    getMessage ()
+    queue.GetMessage()
     |> Task.bind (function
       | Some m -> processQueueMessage m
       | None -> Task.FromResult())
