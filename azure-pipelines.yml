@@ -17,43 +17,97 @@ variables:
   BuildNumber: '$(Build.BuildId)'
   VersionNumber: '$(projectVersion).$(buildNumber)'
 
-steps:
-  - task: UseDotNet@2
-    inputs:
-      version: '9.x'
-  - task: DotNetCoreCLI@2
-    name: Restore
-    inputs:
-      command: 'restore'
-      projects: '**/*.fsproj'
-      arguments: '-r $(Runtime)'
-  - task: DotNetCoreCLI@2
-    name: Build
-    inputs:
-      command: 'build'
-      projects: '**/*.fsproj'
-      arguments: '-r $(Runtime)'
-      publishWebProjects: false
-#  - task: DotNetCoreCLI@2
-#    name: Test
-#    inputs:
-#      command: 'test'
-#      projects: 'tests/**/*.fsproj'
-#      arguments: '-r $(Runtime) --collect:"XPlat Code Coverage"'
-  - task: PublishCodeCoverageResults@2
-    displayName: 'Publish coverage'
-    inputs:
-      summaryFileLocation: '$(Agent.TempDirectory)/*/coverage.cobertura.xml'
-  - task: DotNetCoreCLI@2
-    name: Publish
-    inputs:
-      command: 'publish'
-      projects: 'src/**/Worker.fsproj'
-      arguments: '-r $(Runtime) --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)'
-      publishWebProjects: false
-      zipAfterPublish: false
-  - task: PublishBuildArtifacts@1
-    name: Pack
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      ArtifactName: 'drop'
+stages:
+  - stage: build
+    displayName: 'Build'
+    jobs:
+      - job: build
+        displayName: 'Build'
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: '9.x'
+          - task: DotNetCoreCLI@2
+            name: Restore
+            inputs:
+              command: 'restore'
+              projects: '**/*.fsproj'
+              arguments: '-r $(Runtime)'
+          - task: DotNetCoreCLI@2
+            name: Build
+            inputs:
+              command: 'build'
+              projects: '**/*.fsproj'
+              arguments: '-r $(Runtime) -c Release'
+              publishWebProjects: false
+#          - task: DotNetCoreCLI@2
+#            name: Test
+#            inputs:
+#              command: 'test'
+#              projects: 'tests/**/*.fsproj'
+#              arguments: '-r $(Runtime) -c Release --collect:"XPlat Code Coverage"'
+#          - task: PublishCodeCoverageResults@2
+#            displayName: 'Publish coverage'
+#            inputs:
+#              summaryFileLocation: '$(Agent.TempDirectory)/*/coverage.cobertura.xml'
+          - task: DotNetCoreCLI@2
+            name: Publish
+            inputs:
+              command: 'publish'
+              projects: 'src/**/Worker.fsproj'
+              arguments: '-r $(Runtime) -c Release --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)'
+              publishWebProjects: false
+              zipAfterPublish: false
+          - task: PublishBuildArtifacts@1
+            name: Pack
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'drop'
+  - stage: publish_dev
+    displayName: 'Publish DEV image'
+    trigger: manual
+    jobs:
+      - deployment: publish_dev
+        displayName: 'Publish DEV image'
+        environment: 'dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: drop
+
+                - task: Docker@2
+                  displayName: Build and push an image to container registry
+                  inputs:
+                    command: buildAndPush
+                    repository: $(repository)
+                    dockerfile: "$(Pipeline.Workspace)/drop/Worker/Dockerfile"
+                    containerRegistry: $(registry)
+                    tags: |
+                      0.0.$(Build.BuildId)-alpha
+                      nightly
+  - stage: publish_prd
+    displayName: 'Publish PRD image'
+    trigger: manual
+    jobs:
+      - deployment: publish_prd
+        displayName: 'Publish PRD image'
+        environment: 'prd'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: drop
+
+                - task: Docker@2
+                  displayName: Build and push an image to container registry
+                  inputs:
+                    command: buildAndPush
+                    repository: $(repository)
+                    dockerfile: "$(Pipeline.Workspace)/drop/Worker/Dockerfile"
+                    containerRegistry: $(registry)
+                    tags: |
+                      0.0.$(Build.BuildId)
+                      stable
