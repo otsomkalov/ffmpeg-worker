@@ -29,9 +29,13 @@ type Worker
 
   let processQueueMessage (queueMessage: QueueMessage) =
     let inputMessage =
-      JSON.deserialize<BaseMessage<Conversion.Request>> queueMessage.Body
+      JSON.deserialize<BaseMessage<{| Id: string; Name: string |}>> queueMessage.Body
 
-    let data = inputMessage.Data
+    let request : Conversion.Request = {
+        Id = inputMessage.Data.Id
+        OperationId = inputMessage.OperationId
+        Name = inputMessage.Data.Name
+      }
 
     let io: Conversion.RunIO =
       { Convert = convertFile
@@ -50,13 +54,13 @@ type Worker
       operation.Telemetry.Context.Cloud.RoleName <- appSettings.Name
 
       try
-        do! convert data
+        do! convert request
 
         operation.Telemetry.Success <- true
       with e ->
         Logf.elogfe logger e "Error during processing queue message:"
         do! msgClient.Delete()
-        do! queue.SendFailureMessage()
+        do! queue.SendFailureMessage(inputMessage.OperationId, inputMessage.Data.Id)
         operation.Telemetry.Success <- false
     }
 

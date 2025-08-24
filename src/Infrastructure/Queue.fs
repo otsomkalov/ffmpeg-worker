@@ -33,13 +33,13 @@ type MsgClient(queueClient: QueueClient, id: string, popReceipt: string) =
     member this.Delete() =
       queueClient.DeleteMessageAsync(id, popReceipt) |> Task.map ignore
 
-type AzureStorageQueue(logger: ILogger<AzureStorageQueue>, operationId: string, conversionId: string, settings: Settings.StorageSettings) =
+type AzureStorageQueue(logger: ILogger<AzureStorageQueue>, settings: Settings.StorageSettings) =
   let getQueueClient =
     let queueServiceClient = QueueServiceClient(settings.ConnectionString)
 
     function
-    | Input -> settings.Input.Container
-    | Output -> settings.Output.Container
+    | Input -> settings.Input.Queue
+    | Output -> settings.Output.Queue
     >> queueServiceClient.GetQueueClient
 
   let sendOutputMessage =
@@ -60,7 +60,7 @@ type AzureStorageQueue(logger: ILogger<AzureStorageQueue>, operationId: string, 
           PopReceipt = m.PopReceipt
           Body = m.MessageText })
 
-    member this.SendSuccessMessage(name: string) =
+    member this.SendSuccessMessage(operationId: string, conversionId: string, name: string) =
       let message: BaseMessage<ConversionResultMessage> =
         { OperationId = operationId
           Data =
@@ -71,7 +71,7 @@ type AzureStorageQueue(logger: ILogger<AzureStorageQueue>, operationId: string, 
 
       sendOutputMessage message
 
-    member this.SendFailureMessage() =
+    member this.SendFailureMessage(operationId: string, conversionId: string) =
       let message: BaseMessage<ConversionResultMessage> =
         { OperationId = operationId
           Data =

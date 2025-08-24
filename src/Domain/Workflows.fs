@@ -33,10 +33,10 @@ module Workflows =
             do! remoteStorage.DeleteFile req.Name
             do io.DeleteLocalFile inputFile
             do io.DeleteLocalFile outputFile
-            do! queue.SendSuccessMessage outputFile.FullName
+            do! queue.SendSuccessMessage(req.OperationId, req.Id, outputFile.FullName)
             do! msgClient.Delete()
           | Result.Error Converter.ConvertError ->
             do io.DeleteLocalFile inputFile
-            do! queue.SendFailureMessage()
+            do! queue.SendFailureMessage(req.OperationId, req.Id)
             do! msgClient.Delete()
         }

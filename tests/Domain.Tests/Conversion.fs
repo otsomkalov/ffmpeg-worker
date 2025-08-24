@@ -1,5 +1,6 @@
 module Conversion
 
+open System
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Repos
@@ -9,7 +10,11 @@ open Xunit
 open FsUnit.Xunit
 
 type Conversion() =
-  let request: Conversion.Request = { Id = "test-id"; Name = "test.webm" }
+  let operationId = Guid.NewGuid().ToString()
+
+  let conversionId = "test-id"
+
+  let request: Conversion.Request = { Id = conversionId; OperationId = operationId; Name = "test.webm" }
 
   let inputFile: File =
     { Name = "input"
@@ -35,10 +40,10 @@ type Conversion() =
   let queue = Mock<IQueue>()
 
   do
-    queue.Setup(_.SendSuccessMessage(convertedFile.FullName)).ReturnsAsync(())
+    queue.Setup(_.SendSuccessMessage(operationId, conversionId, convertedFile.FullName)).ReturnsAsync(())
     |> ignore
 
-  do queue.Setup(_.SendFailureMessage()).ReturnsAsync(()) |> ignore
+  do queue.Setup(_.SendFailureMessage(operationId, conversionId)).ReturnsAsync(()) |> ignore
 
   let msgClient = Mock<IMessageClient>()
 

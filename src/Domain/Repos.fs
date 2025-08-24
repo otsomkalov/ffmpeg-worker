@@ -19,6 +19,6 @@ module Repos =
 
   type IQueue =
     abstract GetMessage: unit -> Task<QueueMessage option>
-    abstract SendSuccessMessage: string -> Task<unit>
-    abstract SendFailureMessage: unit -> Task<unit>
+    abstract SendSuccessMessage: string * string * string -> Task<unit>
+    abstract SendFailureMessage: string * string -> Task<unit>
     abstract GetMessageClient: string * string -> IMessageClient
