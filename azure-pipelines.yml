@@ -85,5 +85,5 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/drop/Worker/Dockerfile"
                     containerRegistry: $(dockerRegistryServiceConnection)
                     tags: |
-                      '0.0.$(Build.BuildId)-alpha'
-                      'nightly'
+                      0.0.$(Build.BuildId)-alpha
+                      nightly
