@@ -38,14 +38,14 @@ stages:
             inputs:
               command: 'build'
               projects: '**/*.fsproj'
-              arguments: '-r $(Runtime)'
+              arguments: '-r $(Runtime) -c Release'
               publishWebProjects: false
           - task: DotNetCoreCLI@2
             name: Test
             inputs:
               command: 'test'
               projects: 'tests/**/*.fsproj'
-              arguments: '-r $(Runtime) --collect:"XPlat Code Coverage"'
+              arguments: '-r $(Runtime) -c Release --collect:"XPlat Code Coverage"'
           - task: PublishCodeCoverageResults@2
             displayName: 'Publish coverage'
             inputs:
@@ -55,7 +55,7 @@ stages:
             inputs:
               command: 'publish'
               projects: 'src/**/Worker.fsproj'
-              arguments: '-r $(Runtime) --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)'
+              arguments: '-r $(Runtime) -c Release --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)'
               publishWebProjects: false
               zipAfterPublish: false
           - task: PublishBuildArtifacts@1
