@@ -82,7 +82,7 @@ stages:
                   inputs:
                     command: buildAndPush
                     repository: $(imageRepository)
-                    dockerfile: "$(Pipeline.Workspace)/drop/Worker/Dockerfile"
+                    dockerfile: "$(Build.ArtifactStagingDirectory)/drop/Worker/Dockerfile"
                     containerRegistry: $(dockerRegistryServiceConnection)
                     tags: |
                       0.0.$(Build.BuildId)-alpha
