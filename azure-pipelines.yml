@@ -82,7 +82,7 @@ stages:
                   inputs:
                     command: buildAndPush
                     repository: $(imageRepository)
-                    dockerfile: "**/Dockerfile"
+                    dockerfile: "$(System.ArtifactsDirectory)/**/Dockerfile"
                     containerRegistry: $(dockerRegistryServiceConnection)
                     tags: |
                       '0.0.$(Build.BuildId)-alpha'
