@@ -2,105 +2,87 @@
 
 open System
 open System.Text.Json.Serialization
-open System.Threading.Tasks
 open Azure.Storage.Queues
-open Azure.Storage.Queues.Models
-open FSharp
+open Domain.Repos
 open Infrastructure.Helpers
 open Microsoft.Extensions.Logging
 open otsom.fs.Extensions
-open Domain.Workflows
 
-[<RequireQualifiedAccess>]
-module Queue =
-  type QueueType =
-    | Input
-    | Output
+type internal QueueType =
+  | Input
+  | Output
 
-  type BaseMessage<'a> = { OperationId: string; Data: 'a }
+type BaseMessage<'a> = { OperationId: string; Data: 'a }
 
-  let getQueueClient (settings: Settings.StorageSettings) =
+type internal SuccessfulConversion = { Name: string }
+
+type internal ConversionError = { Error: string }
+
+type internal ConversionResult =
+  | Success of SuccessfulConversion
+  | Error of ConversionError
+
+type internal ConversionResultMessage =
+  { Id: string; Result: ConversionResult }
+
+[<JsonFSharpConverter>]
+type internal OutputMessage = { Id: string; Name: string }
+
+type MsgClient(queueClient: QueueClient, id: string, popReceipt: string) =
+  interface IMessageClient with
+    member this.Delete() =
+      queueClient.DeleteMessageAsync(id, popReceipt) |> Task.map ignore
+
+type AzureStorageQueue(logger: ILogger<AzureStorageQueue>, settings: Settings.StorageSettings) =
+  let getQueueClient =
     let queueServiceClient = QueueServiceClient(settings.ConnectionString)
 
     function
-    | Input -> settings.Input.Container
-    | Output -> settings.Output.Container
+    | Input -> settings.Input.Queue
+    | Output -> settings.Output.Queue
     >> queueServiceClient.GetQueueClient
 
-  type GetMessage = unit -> Task<QueueMessage option>
-
-  let getMessage settings : GetMessage =
-    let getQueueClient = getQueueClient settings
-    let inputQueueClient = getQueueClient Input
-
-    inputQueueClient.ReceiveMessageAsync
-    >> Task.map Option.ofObj
-    >> Task.map (Option.bind (fun m -> m.Value |> Option.ofObj))
-    >> Task.map (Option.filter (fun m -> not (String.IsNullOrEmpty(m.MessageText))))
-
-  type DeleteMessageFactory = string * string -> Queue.DeleteMessage
-
-  let deleteMessageFactory settings (loggerFactory: ILoggerFactory) : DeleteMessageFactory =
-    let logger = loggerFactory.CreateLogger(nameof Queue.DeleteMessage)
-    let getQueueClient = getQueueClient settings
-    let inputQueueClient = getQueueClient Input
-
-    fun (id, popReceipt) ->
-      fun () ->
-        Logf.logfi logger "Deleting message from queue"
-
-        inputQueueClient.DeleteMessageAsync(id, popReceipt) |> Task.map ignore
-
-  type SuccessfulConversion = { Name: string }
-
-  type ConversionError = { Error: string }
-
-  type ConversionResult =
-    | Success of SuccessfulConversion
-    | Error of ConversionError
-
-  type ConversionResultMessage =
-    { Id: string; Result: ConversionResult }
-
-  let private sendOutputMessage settings =
-    let getQueueClient = getQueueClient settings
+  let sendOutputMessage =
     let outputQueueClient = getQueueClient Output
 
     JSON.serialize >> outputQueueClient.SendMessageAsync >> Task.map ignore
 
-  [<JsonFSharpConverter>]
-  type OutputMessage = { Id: string; Name: string }
+  interface IQueue with
+    member this.GetMessage() =
+      let inputQueueClient = getQueueClient Input
 
-  type SendSuccessMessageFactory = string -> string -> Queue.SendSuccessMessage
+      inputQueueClient.ReceiveMessageAsync()
+      |> Task.map Option.ofObj
+      |> Task.map (Option.bind (fun m -> m.Value |> Option.ofObj))
+      |> Task.map (Option.filter (fun m -> not (String.IsNullOrEmpty(m.MessageText))))
+      |> TaskOption.map (fun m ->
+        { Id = m.MessageId
+          PopReceipt = m.PopReceipt
+          Body = m.MessageText })
 
-  let sendSuccessMessageFactory settings (loggerFactory: ILoggerFactory) : SendSuccessMessageFactory =
-    let logger = loggerFactory.CreateLogger(nameof Queue.SendSuccessMessage)
+    member this.SendSuccessMessage(operationId: string, conversionId: string, name: string) =
+      let message: BaseMessage<ConversionResultMessage> =
+        { OperationId = operationId
+          Data =
+            { Id = conversionId
+              Result = ConversionResult.Success { Name = name } } }
 
-    fun operationId conversionId ->
-      fun name ->
-        let message: BaseMessage<ConversionResultMessage> =
-          { OperationId = operationId
-            Data =
-              { Id = conversionId
-                Result = ConversionResult.Success { Name = name } } }
+      logger.LogInformation "Sending successful conversion result message"
 
-        Logf.logfi logger "Sending successful conversion result message"
+      sendOutputMessage message
 
-        sendOutputMessage settings message
+    member this.SendFailureMessage(operationId: string, conversionId: string) =
+      let message: BaseMessage<ConversionResultMessage> =
+        { OperationId = operationId
+          Data =
+            { Id = conversionId
+              Result = ConversionResult.Error { Error = "Error during conversion!" } } }
 
-  type SendFailureMessageFactory = string -> string -> Queue.SendFailureMessage
+      logger.LogInformation "Sending conversion result error message"
 
-  let sendFailureMessageFactory settings (loggerFactory: ILoggerFactory) : SendFailureMessageFactory =
-    let logger = loggerFactory.CreateLogger(nameof Queue.SendFailureMessage)
+      sendOutputMessage message
 
-    fun operationId conversionId ->
-      fun () ->
-        let message: BaseMessage<ConversionResultMessage> =
-          { OperationId = operationId
-            Data =
-              { Id = conversionId
-                Result = ConversionResult.Error { Error = "Error during conversion!" } } }
+    member this.GetMessageClient(id, popReceipt) =
+      let inputQueueClient = getQueueClient Input
 
-        Logf.logfi logger "Sending conversion result error message"
-
-        sendOutputMessage settings message
+      MsgClient(inputQueueClient, id, popReceipt) :> IMessageClient

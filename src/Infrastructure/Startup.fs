@@ -20,4 +20,6 @@ let addIntegrationsCore (cfg: IConfiguration) (services: IServiceCollection) =
     .BuildSingleton<BlobServiceClient, StorageSettings>(fun cfg -> BlobServiceClient(cfg.ConnectionString))
     .BuildSingleton<QueueServiceClient, StorageSettings>(fun cfg -> QueueServiceClient(cfg.ConnectionString))
 
-  services.AddSingleton<IRemoteStorage, AzureRemoteStorage>()
+  services
+    .AddSingleton<IRemoteStorage, AzureRemoteStorage>()
+    .AddSingleton<IQueue, AzureStorageQueue>()
