@@ -9,7 +9,7 @@ pr:
       - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'windows-latest'
 
 variables:
   Runtime: 'linux-musl-x64'
