@@ -66,8 +66,6 @@ stages:
   - stage: publish_dev
     displayName: 'Publish DEV image'
     trigger: manual
-    variables:
-      - group: dev
     jobs:
       - deployment: publish_dev
         displayName: 'Publish DEV image'
@@ -86,6 +84,6 @@ stages:
                     repository: $(imageRepository)
                     dockerfile: "Dockerfile"
                     containerRegistry: $(dockerRegistryServiceConnection)
-                    tags:
-                      - '0.0.$(Build.BuildId)-alpha'
-                      - 'nightly'
+                    tags: |
+                      '0.0.$(Build.BuildId)-alpha'
+                      'nightly'
