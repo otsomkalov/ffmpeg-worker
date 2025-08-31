@@ -20,23 +20,28 @@ module Workflows =
       { Convert: Converter.Convert
         DeleteLocalFile: LocalStorage.DeleteFile }
 
-    let run (remoteStorage: IRemoteStorage) (queue: IQueue) (msgClient: IMessageClient) (io: RunIO) : Conversion.Run =
-      fun req ->
-        task {
-          let! inputFile = remoteStorage.DownloadFile req.Name
+    let run
+      (inputStorage: IInputStorage)
+      (outputStorage: IOutputStorage)
+      (inputMsgClient: IInputMsgClient)
+      (outputQueue: IOutputQueue)
+      (io: RunIO)
+      : Conversion.Run =
+      fun req -> task {
+        let! inputFile = inputStorage.DownloadFile req.Name
 
-          let! conversionResult = io.Convert inputFile
+        let! conversionResult = io.Convert inputFile
 
-          match conversionResult with
-          | Ok outputFile ->
-            do! remoteStorage.UploadFile outputFile
-            do! remoteStorage.DeleteFile req.Name
-            do io.DeleteLocalFile inputFile
-            do io.DeleteLocalFile outputFile
-            do! queue.SendSuccessMessage(req.OperationId, req.Id, outputFile.FullName)
-            do! msgClient.Delete()
-          | Result.Error Converter.ConvertError ->
-            do io.DeleteLocalFile inputFile
-            do! queue.SendFailureMessage(req.OperationId, req.Id)
-            do! msgClient.Delete()
-        }
+        match conversionResult with
+        | Ok outputFile ->
+          do! outputStorage.UploadFile outputFile
+          do! inputStorage.DeleteFile req.Name
+          do io.DeleteLocalFile inputFile
+          do io.DeleteLocalFile outputFile
+          do! outputQueue.SendSuccessMessage(outputFile.FullName)
+          do! inputMsgClient.Delete()
+        | Result.Error Converter.ConvertError ->
+          do io.DeleteLocalFile inputFile
+          do! outputQueue.SendFailureMessage()
+          do! inputMsgClient.Delete()
+      }

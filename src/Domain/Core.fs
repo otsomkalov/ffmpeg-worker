@@ -11,6 +11,6 @@ module Core =
 
   [<RequireQualifiedAccess>]
   module Conversion =
-    type Request = { Id: string; OperationId: string; Name: string }
+    type Request = { Id: string; Name: string }
 
     type Run = Request -> Task<unit>

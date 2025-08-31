@@ -6,12 +6,13 @@ open System.Threading.Tasks
 open Domain.Core
 open Domain.Repos
 open FSharp
-open Infrastructure
+open Infra
+open Infra.Helpers
+open Infra.Queue
 open Microsoft.ApplicationInsights
 open Microsoft.ApplicationInsights.DataContracts
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
-open Infrastructure.Helpers
 open Worker.Settings
 open otsom.fs.Extensions
 open Domain.Workflows
@@ -20,10 +21,12 @@ type Worker
   (
     logger: ILogger<Worker>,
     appSettings: AppSettings,
-    remoteStorage: IRemoteStorage,
     convertFile: Converter.Convert,
     telemetryClient: TelemetryClient,
-    queue: IQueue
+    inputQueue: IInputQueue,
+    getOutputQueue: GetOutputQueue,
+    inputStorage: IInputStorage,
+    outputStorage: IOutputStorage
   ) =
   inherit BackgroundService()
 
@@ -33,7 +36,6 @@ type Worker
 
     let request : Conversion.Request = {
         Id = inputMessage.Data.Id
-        OperationId = inputMessage.OperationId
         Name = inputMessage.Data.Name
       }
 
@@ -41,9 +43,10 @@ type Worker
       { Convert = convertFile
         DeleteLocalFile = LocalStorage.deleteFile }
 
-    let msgClient = queue.GetMessageClient(queueMessage.Id, queueMessage.PopReceipt)
+    let inputMsgClient = inputQueue.GetInputMsgClient(queueMessage.Id, queueMessage.PopReceipt)
+    let outputQueue = getOutputQueue (inputMessage.OperationId, inputMessage.Data.Id)
 
-    let convert = Conversion.run remoteStorage queue msgClient io
+    let convert = Conversion.run inputStorage outputStorage inputMsgClient outputQueue io
 
     task {
       use activity =
@@ -59,13 +62,13 @@ type Worker
         operation.Telemetry.Success <- true
       with e ->
         Logf.elogfe logger e "Error during processing queue message:"
-        do! msgClient.Delete()
-        do! queue.SendFailureMessage(inputMessage.OperationId, inputMessage.Data.Id)
+        do! inputMsgClient.Delete()
+        do! outputQueue.SendFailureMessage()
         operation.Telemetry.Success <- false
     }
 
   let runWorker () =
-    queue.GetMessage()
+    inputQueue.GetMessage()
     |> Task.bind (function
       | Some m -> processQueueMessage m
       | None -> Task.FromResult())

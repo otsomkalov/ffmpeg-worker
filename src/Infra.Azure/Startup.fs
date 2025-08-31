@@ -1,10 +1,11 @@
-﻿module Infrastructure.Startup
+﻿module Infra.Azure.Startup
 
 #nowarn "20"
 
 open Azure.Storage.Blobs
 open Azure.Storage.Queues
-open Infrastructure.Settings
+open Infra.Azure.Queue
+open Infra.Azure.Storage
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Options
@@ -21,5 +22,7 @@ let addIntegrationsCore (cfg: IConfiguration) (services: IServiceCollection) =
     .BuildSingleton<QueueServiceClient, StorageSettings>(fun cfg -> QueueServiceClient(cfg.ConnectionString))
 
   services
-    .AddSingleton<IRemoteStorage, AzureRemoteStorage>()
-    .AddSingleton<IQueue, AzureStorageQueue>()
+    .AddSingleton<IInputStorage, InputStorage>()
+    .AddSingleton<IOutputStorage, OutputStorage>()
+    .AddSingleton<IInputQueue, InputQueue>()
+    .BuildSingleton<GetOutputQueue, _, _, _>(Queue.getOutputQueue)
