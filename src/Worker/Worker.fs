@@ -5,7 +5,6 @@ open System.Threading
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Repos
-open FSharp
 open Infra
 open Infra.Helpers
 open Infra.Queue
@@ -34,23 +33,24 @@ type Worker
     let inputMessage =
       JSON.deserialize<BaseMessage<{| Id: string; Name: string |}>> queueMessage.Body
 
-    let request : Conversion.Request = {
-        Id = inputMessage.Data.Id
-        Name = inputMessage.Data.Name
-      }
+    let request: Conversion.Request =
+      { Id = inputMessage.Data.Id
+        Name = inputMessage.Data.Name }
 
     let io: Conversion.RunIO =
       { Convert = convertFile
         DeleteLocalFile = LocalStorage.deleteFile }
 
-    let inputMsgClient = inputQueue.GetInputMsgClient(queueMessage.Id, queueMessage.PopReceipt)
+    let inputMsgClient =
+      inputQueue.GetInputMsgClient(queueMessage.Id, queueMessage.PopReceipt)
+
     let outputQueue = getOutputQueue (inputMessage.OperationId, inputMessage.Data.Id)
 
-    let convert = Conversion.run inputStorage outputStorage inputMsgClient outputQueue io
+    let convert =
+      Conversion.run inputStorage outputStorage inputMsgClient outputQueue io
 
     task {
-      use activity =
-        (new Activity("Convert")).SetParentId(inputMessage.OperationId)
+      use activity = (new Activity("Convert")).SetParentId(inputMessage.OperationId)
 
       use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
 
@@ -61,7 +61,7 @@ type Worker
 
         operation.Telemetry.Success <- true
       with e ->
-        Logf.elogfe logger e "Error during processing queue message:"
+        logger.LogError(e, "Error during processing queue message")
         do! inputMsgClient.Delete()
         do! outputQueue.SendFailureMessage()
         operation.Telemetry.Success <- false
@@ -73,13 +73,12 @@ type Worker
       | Some m -> processQueueMessage m
       | None -> Task.FromResult())
 
-  override _.ExecuteAsync(ct: CancellationToken) =
-    task {
-      while not ct.IsCancellationRequested do
-        try
-          do! runWorker ()
-        with e ->
-          Logf.elogfe logger e "Worker error:"
+  override _.ExecuteAsync(ct: CancellationToken) = task {
+    while not ct.IsCancellationRequested do
+      try
+        do! runWorker ()
+      with e ->
+        logger.LogError(e, "Worker error")
 
-        do! Task.Delay(appSettings.Delay)
-    }
+      do! Task.Delay(appSettings.Delay)
+  }

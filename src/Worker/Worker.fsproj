@@ -18,6 +18,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.fsproj"/>
+  </ItemGroup>
+  
+  <ItemGroup Condition="$(DefineConstants.Contains('AWS'))">
+    <ProjectReference Include="..\Infra.Amazon\Infra.Amazon.fsproj" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="$(DefineConstants.Contains('AZ'))">
     <ProjectReference Include="..\Infra.Azure\Infra.Azure.fsproj" />
   </ItemGroup>
 

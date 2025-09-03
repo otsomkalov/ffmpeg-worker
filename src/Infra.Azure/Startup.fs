@@ -12,7 +12,7 @@ open Microsoft.Extensions.Options
 open otsom.fs.Extensions.DependencyInjection
 open Domain.Repos
 
-let addIntegrationsCore (cfg: IConfiguration) (services: IServiceCollection) =
+let addAzureInfra (cfg: IConfiguration) (services: IServiceCollection) =
   services.Configure<StorageSettings>(cfg.GetSection(StorageSettings.SectionName))
 
   services.BuildSingleton<StorageSettings, IOptions<StorageSettings>>(_.Value)
