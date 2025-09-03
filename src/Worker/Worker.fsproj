@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.fsproj"/>
-    <ProjectReference Include="..\Infrastructure\Infrastructure.fsproj"/>
+    <ProjectReference Include="..\Infra.Azure\Infra.Azure.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

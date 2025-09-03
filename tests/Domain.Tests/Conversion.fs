@@ -14,7 +14,9 @@ type Conversion() =
 
   let conversionId = "test-id"
 
-  let request: Conversion.Request = { Id = conversionId; OperationId = operationId; Name = "test.webm" }
+  let request: Conversion.Request =
+    { Id = conversionId
+      Name = "test.webm" }
 
   let inputFile: File =
     { Name = "input"
@@ -28,26 +30,31 @@ type Conversion() =
       Extension = "mp4"
       Path = "C:/output.mp4" }
 
-  let remoteStorage = Mock<IRemoteStorage>()
+  let inputStorage = Mock<IInputStorage>()
 
   do
-    remoteStorage.Setup(_.DownloadFile(request.Name)).ReturnsAsync(inputFile)
+    inputStorage.Setup(_.DownloadFile(request.Name)).ReturnsAsync(inputFile)
     |> ignore
 
-  do remoteStorage.Setup(_.UploadFile(convertedFile)).ReturnsAsync(()) |> ignore
-  do remoteStorage.Setup(_.DeleteFile(request.Name)).ReturnsAsync(()) |> ignore
+  do inputStorage.Setup(_.DeleteFile(request.Name)).ReturnsAsync(()) |> ignore
 
-  let queue = Mock<IQueue>()
+  let outputStorage = Mock<IOutputStorage>()
+
+  do outputStorage.Setup(_.UploadFile(convertedFile)).ReturnsAsync(()) |> ignore
+
+  let queue = Mock<IInputQueue>()
+
+  let outputQueue = Mock<IOutputQueue>()
 
   do
-    queue.Setup(_.SendSuccessMessage(operationId, conversionId, convertedFile.FullName)).ReturnsAsync(())
+    outputQueue.Setup(_.SendSuccessMessage(convertedFile.FullName)).ReturnsAsync(())
     |> ignore
 
-  do queue.Setup(_.SendFailureMessage(operationId, conversionId)).ReturnsAsync(()) |> ignore
+  do outputQueue.Setup(_.SendFailureMessage()).ReturnsAsync(()) |> ignore
 
-  let msgClient = Mock<IMessageClient>()
+  let inputMsgClient = Mock<IInputMsgClient>()
 
-  do msgClient.Setup(_.Delete()).ReturnsAsync(()) |> ignore
+  do inputMsgClient.Setup(_.Delete()).ReturnsAsync(()) |> ignore
 
   let io: Conversion.RunIO =
     { Convert =
@@ -59,12 +66,13 @@ type Conversion() =
 
   [<Fact>]
   let ``run should send success message and cleanup local and remote files on success`` () =
-    let sut = Conversion.run remoteStorage.Object queue.Object msgClient.Object io
+    let sut =
+      Conversion.run inputStorage.Object outputStorage.Object inputMsgClient.Object outputQueue.Object io
 
     task {
       do! sut request
 
-      remoteStorage.VerifyAll()
+      inputStorage.VerifyAll()
     }
 
   [<Fact>]
@@ -77,11 +85,12 @@ type Conversion() =
 
               Converter.ConvertError |> Result.Error |> Task.FromResult }
 
-    let sut = Conversion.run remoteStorage.Object queue.Object msgClient.Object io
+    let sut =
+      Conversion.run inputStorage.Object outputStorage.Object inputMsgClient.Object outputQueue.Object io
 
     task {
       do! sut request
 
-      remoteStorage.Verify(_.DownloadFile(request.Name))
-      remoteStorage.VerifyNoOtherCalls()
+      inputStorage.Verify(_.DownloadFile(request.Name))
+      inputStorage.VerifyNoOtherCalls()
     }

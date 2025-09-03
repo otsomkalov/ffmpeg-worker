@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Core
+﻿namespace Infra
 
 open System.IO
 open shortid
@@ -15,4 +15,3 @@ module File =
       FullName = fileNameWithExtension
       Extension = extension
       Path = filePath }
-

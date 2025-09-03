@@ -6,29 +6,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Core.fs"/>
     <Compile Include="Settings.fs"/>
-    <Compile Include="Helpers.fs"/>
-    <Compile Include="FFMpegConverter.fs" />
     <Compile Include="Queue.fs"/>
-    <Compile Include="LocalStorage.fs"/>
-    <Compile Include="AzureRemoteStorage.fs" />
+    <Compile Include="Storage.fs" />
     <Compile Include="Startup.fs"/>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Storage.Blobs" Version="12.25.0" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.23.0" />
-    <PackageReference Include="FSharp.SystemTextJson" Version="1.4.36"/>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.8" />
-    <PackageReference Include="shortid" Version="4.0.0"/>
     <PackageReference Include="FSharp.Logf" Version="1.2.2"/>
     <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.12"/>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.fsproj"/>
+    <ProjectReference Include="..\Infra\Infra.fsproj" />
   </ItemGroup>
 
 </Project>

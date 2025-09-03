@@ -1,15 +1,7 @@
-﻿namespace Infrastructure.Helpers
+﻿namespace Infra.Helpers
 
 open System.Text.Json
 open System.Text.Json.Serialization
-open System.Threading.Tasks
-open otsom.fs.Extensions
-
-module Option =
-  let taskMap mapping =
-    function
-    | Some v -> mapping v |> Task.map Some
-    | None -> None |> Task.FromResult
 
 module JSON =
   let private options =

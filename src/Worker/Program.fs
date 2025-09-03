@@ -1,8 +1,9 @@
 namespace Worker
 
 open Azure.Storage.Queues
-open Infrastructure
-open Infrastructure.Settings
+open Infra
+open Infra.Azure
+open Infra.Settings
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
