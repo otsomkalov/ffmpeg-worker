@@ -135,7 +135,7 @@ stages:
                   artifact: aws
 
                 - task: Docker@2
-                  displayName: Build and push an image to container registry
+                  displayName: Build and push AWS image to container registry
                   inputs:
                     command: buildAndPush
                     repository: $(repository)
@@ -144,3 +144,47 @@ stages:
                     tags: |
                       0.0.$(Build.BuildId)-aws-alpha
                       aws-nightly
+  - stage: publish_prd
+    displayName: 'Publish PRD images'
+    trigger: manual
+    jobs:
+      - deployment: publish_prd_azure
+        displayName: 'Publish Azure PRD images'
+        environment: 'prd'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: az
+
+                - task: Docker@2
+                  displayName: Build and push Azure image to container registry
+                  inputs:
+                    command: buildAndPush
+                    repository: $(repository)
+                    dockerfile: "$(Pipeline.Workspace)/az/Worker/Dockerfile"
+                    containerRegistry: $(registry)
+                    tags: |
+                      0.0.$(Build.BuildId)-az
+                      az-stable
+      - deployment: publish_prd_aws
+        displayName: 'Publish AWS PRD images'
+        environment: 'prd'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: aws
+
+                - task: Docker@2
+                  displayName: Build and push AWS image to container registry
+                  inputs:
+                    command: buildAndPush
+                    repository: $(repository)
+                    dockerfile: "$(Pipeline.Workspace)/aws/Worker/Dockerfile"
+                    containerRegistry: $(registry)
+                    tags: |
+                      0.0.$(Build.BuildId)-aws
+                      aws-stable
