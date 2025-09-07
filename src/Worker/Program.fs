@@ -37,18 +37,14 @@ module Program =
 
     services.AddHostedService<Worker.Worker>() |> ignore
 
-    services
-      .BuildSingleton<Converter.Convert, FFMpegSettings, ILoggerFactory>(FFMpegConverter.convert)
+    services.BuildSingleton<Converter.Convert, FFMpegSettings, ILoggerFactory>(FFMpegConverter.convert)
 
     services.AddApplicationInsightsTelemetryWorkerService()
 
     ()
 
   let private createHostBuilder args =
-    Host
-      .CreateDefaultBuilder(args)
-      .ConfigureAppConfiguration(configureAppConfig)
-      .ConfigureServices(configureServices)
+    Host.CreateDefaultBuilder(args).ConfigureAppConfiguration(configureAppConfig).ConfigureServices(configureServices)
 
   [<EntryPoint>]
   let main args =
