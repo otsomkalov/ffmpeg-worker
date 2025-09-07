@@ -18,11 +18,11 @@ variables:
   VersionNumber: '$(projectVersion).$(buildNumber)'
 
 stages:
-  - stage: build
-    displayName: 'Build'
+  - stage: restore
+    displayName: 'Restore'
     jobs:
       - job: restore
-        displayName: 'Build'
+        displayName: 'Restore'
         steps:
           - task: UseDotNet@2
             inputs:
@@ -48,6 +48,7 @@ stages:
               arguments: '-r $(Runtime)'
   - stage: build_azure
     displayName: 'Build Azure'
+    dependsOn: restore
     jobs:
       - job: build_azure
         displayName: 'Build Azure'
@@ -56,7 +57,7 @@ stages:
             name: Build
             inputs:
               command: 'build'
-              projects: '**/*.fsproj'
+              projects: 'src/**/Worker.fsproj'
               arguments: '-r $(Runtime) -c Release p:DefineConstants=AZ'
               publishWebProjects: false
           - task: DotNetCoreCLI@2
@@ -74,6 +75,7 @@ stages:
               ArtifactName: 'az'
   - stage: build_aws
     displayName: 'Build AWS'
+    dependsOn: restore
     jobs:
       - job: build_aws
         displayName: 'Build AWS'
@@ -82,7 +84,7 @@ stages:
             name: Build
             inputs:
               command: 'build'
-              projects: '**/*.fsproj'
+              projects: 'src/**/Worker.fsproj'
               arguments: '-r $(Runtime) -c Release -p:DefineConstants=AWS'
               publishWebProjects: false
           - task: DotNetCoreCLI@2
