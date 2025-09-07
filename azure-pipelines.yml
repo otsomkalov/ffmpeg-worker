@@ -50,6 +50,9 @@ stages:
         displayName: 'Build Azure'
         dependsOn: restore
         steps:
+          - task: UseDotNet@2
+            inputs:
+              version: '9.x'
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
@@ -74,6 +77,9 @@ stages:
         displayName: 'Build AWS'
         dependsOn: restore
         steps:
+          - task: UseDotNet@2
+            inputs:
+              version: '9.x'
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
