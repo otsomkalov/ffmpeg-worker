@@ -100,3 +100,47 @@ stages:
             inputs:
               PathtoPublish: '$(Build.ArtifactStagingDirectory)/aws'
               ArtifactName: 'aws'
+  - stage: publish_dev
+    displayName: 'Publish DEV images'
+    trigger: manual
+    jobs:
+      - deployment: publish_dev_azure
+        displayName: 'Publish Azure DEV images'
+        environment: 'dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: az
+
+                - task: Docker@2
+                  displayName: Build and push Azure image to container registry
+                  inputs:
+                    command: buildAndPush
+                    repository: $(repository)
+                    dockerfile: "$(Pipeline.Workspace)/az/Worker/Dockerfile"
+                    containerRegistry: $(registry)
+                    tags: |
+                      0.0.$(Build.BuildId)-az-alpha
+                      az-nightly
+      - deployment: publish_dev_aws
+        displayName: 'Publish AWS DEV images'
+        environment: 'dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: aws
+
+                - task: Docker@2
+                  displayName: Build and push an image to container registry
+                  inputs:
+                    command: buildAndPush
+                    repository: $(repository)
+                    dockerfile: "$(Pipeline.Workspace)/aws/Worker/Dockerfile"
+                    containerRegistry: $(registry)
+                    tags: |
+                      0.0.$(Build.BuildId)-aws-alpha
+                      aws-nightly
