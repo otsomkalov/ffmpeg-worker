@@ -34,23 +34,24 @@ type Worker
     let inputMessage =
       JSON.deserialize<BaseMessage<{| Id: string; Name: string |}>> queueMessage.Body
 
-    let request : Conversion.Request = {
-        Id = inputMessage.Data.Id
-        Name = inputMessage.Data.Name
-      }
+    let request: Conversion.Request =
+      { Id = inputMessage.Data.Id
+        Name = inputMessage.Data.Name }
 
     let io: Conversion.RunIO =
       { Convert = convertFile
         DeleteLocalFile = LocalStorage.deleteFile }
 
-    let inputMsgClient = inputQueue.GetInputMsgClient(queueMessage.Id, queueMessage.PopReceipt)
+    let inputMsgClient =
+      inputQueue.GetInputMsgClient(queueMessage.Id, queueMessage.PopReceipt)
+
     let outputQueue = getOutputQueue (inputMessage.OperationId, inputMessage.Data.Id)
 
-    let convert = Conversion.run inputStorage outputStorage inputMsgClient outputQueue io
+    let convert =
+      Conversion.run inputStorage outputStorage inputMsgClient outputQueue io
 
     task {
-      use activity =
-        (new Activity("Convert")).SetParentId(inputMessage.OperationId)
+      use activity = (new Activity("Convert")).SetParentId(inputMessage.OperationId)
 
       use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
 
@@ -73,13 +74,12 @@ type Worker
       | Some m -> processQueueMessage m
       | None -> Task.FromResult())
 
-  override _.ExecuteAsync(ct: CancellationToken) =
-    task {
-      while not ct.IsCancellationRequested do
-        try
-          do! runWorker ()
-        with e ->
-          Logf.elogfe logger e "Worker error:"
+  override _.ExecuteAsync(ct: CancellationToken) = task {
+    while not ct.IsCancellationRequested do
+      try
+        do! runWorker ()
+      with e ->
+        Logf.elogfe logger e "Worker error:"
 
-        do! Task.Delay(appSettings.Delay)
-    }
+      do! Task.Delay(appSettings.Delay)
+  }
