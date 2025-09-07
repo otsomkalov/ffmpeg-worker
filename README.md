@@ -1,15 +1,14 @@
 # FFMpegAzureStorageWorker
 
-Background FFMpeg worker using Azure Storage Queues
+Background FFMpeg worker powered by Azure Storage Blob/Queue or AWS S3/SQS
 
 ## Configure
 
-The next environment variables are used by an app:
+The next environment variables are used by an app and shared between both Azure and AWS versions:
 
 | Parameter                             | Required? | Description                                                                                   |
 |---------------------------------------|-----------|-----------------------------------------------------------------------------------------------|
 | APPLICATIONINSIGHTS_CONNECTION_STRING | false     | Azure App Insights connection string for logging & tracebility                                |
-| Storage__ConnectionString             | true      | Azure Storage account connection string                                                       |
 | FFMpeg__Path                          | true      | FFMpeg full path                                                                              |
 | FFMpeg__Arguments                     | true      | Arguments for FFMpeg conversion                                                               |
 | Storage__Input__Container             | false     | Name of azure storage container for input files to convert. Default name: input               |
@@ -20,23 +19,37 @@ The next environment variables are used by an app:
 | Name                                  | true      | Name of an application instance for traceability                                              |
 | FFMpeg__TargetExtension               | false     | Target extension of output file with dot. If not set - extension of source file will be taken |
 
+### Azure
+
+| Parameter                             | Required? | Description                                                                                   |
+|---------------------------------------|-----------|-----------------------------------------------------------------------------------------------|
+| Storage__ConnectionString             | true      | Azure Storage account connection string                                                       |
+
+### AWS
+
+Refer to the AWS guide in setting up a connection. No additional parameters are required.
+
 ## Deploy
 
 ### Docker
 
-Use [pre-build image](https://hub.docker.com/repository/docker/infinitu1327/ffmpeg-azure-storage-worker/general) from DockerHub.
+Use [pre-built image](https://hub.docker.com/repository/docker/infinitu1327/ffmpeg-azure-storage-worker/general) from DockerHub.
 
 There are multiple tags available:
-- `nightly` - latest build for PR
-- `stable` - latest `main` version
-- `x.x.xxxx-alpha` - image that corresponds to a particular PR build in Azure DevOps
-- `x.x.xxxx` - image that corresponds to a particular `main` branch build in Azure DevOps
+- `aws-nightly` - latest AWS build for PR
+- `az-nightly` - latest Azure build for PR
+- `aws-stable` - latest AWS build for `main` branch
+- `az-stable` - latest Azure build for `main` branch
+- `x.x.xxxx-aws-alpha` - image for a particular AWS PR build in Azure DevOps
+- `x.x.xxxx-az-alpha` - image for a particular Azure PR build in Azure DevOps
+- `x.x.xxxx-aws` - image for a particular AWS `main` branch build in Azure DevOps
+- `x.x.xxxx-az` - image for a particular Azure `main` branch build in Azure DevOps
 
 ## Local development
 
 ### Prerequisites
 
-- [.NET 8](https://dotnet.microsoft.com/download) or higher
+- [.NET 9](https://dotnet.microsoft.com/download) or higher
 - [FFmpeg](https://ffmpeg.org/download.html)
 
 ### Running
@@ -44,9 +57,11 @@ There are multiple tags available:
 **Project:**
 
 1. Clone project
-2. Update **appsettings.json** or environment variables
-3. `dotnet run` or your favotire IDE
+2. Update **appsettings.json**/**secrets.json** or set environment variables
+3. Add `AZ`/`AWS` property to MsBuild `DefineConstants`
+4. `dotnet run` or your favorite IDE
 
 ## Built With
 
 * [azure-sdk-for-net](https://github.com/Azure/azure-sdk-for-net) - The official Azure SDK for .NET
+* [aws-sdk-net](https://github.com/aws/aws-sdk-net) - The official AWS SDK for .NET.

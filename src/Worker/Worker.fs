@@ -5,7 +5,6 @@ open System.Threading
 open System.Threading.Tasks
 open Domain.Core
 open Domain.Repos
-open FSharp
 open Infra
 open Infra.Helpers
 open Infra.Queue
@@ -62,7 +61,7 @@ type Worker
 
         operation.Telemetry.Success <- true
       with e ->
-        Logf.elogfe logger e "Error during processing queue message:"
+        logger.LogError(e, "Error during processing queue message")
         do! inputMsgClient.Delete()
         do! outputQueue.SendFailureMessage()
         operation.Telemetry.Success <- false
@@ -79,7 +78,7 @@ type Worker
       try
         do! runWorker ()
       with e ->
-        Logf.elogfe logger e "Worker error:"
+        logger.LogError(e, "Worker error")
 
       do! Task.Delay(appSettings.Delay)
   }

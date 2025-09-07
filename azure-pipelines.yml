@@ -21,8 +21,8 @@ stages:
   - stage: build
     displayName: 'Build'
     jobs:
-      - job: build
-        displayName: 'Build'
+      - job: restore
+        displayName: 'Restore'
         steps:
           - task: UseDotNet@2
             inputs:
@@ -46,81 +46,145 @@ stages:
               command: 'restore'
               projects: '**/*.fsproj'
               arguments: '-r $(Runtime)'
+      - job: build_azure
+        displayName: 'Build Azure'
+        dependsOn: restore
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: '9.x'
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
               command: 'build'
-              projects: '**/*.fsproj'
-              arguments: '-r $(Runtime) -c Release'
+              projects: 'src/**/Worker.fsproj'
+              arguments: '-r $(Runtime) -c Release -p:DefineConstants=AZ'
               publishWebProjects: false
-#          - task: DotNetCoreCLI@2
-#            name: Test
-#            inputs:
-#              command: 'test'
-#              projects: 'tests/**/*.fsproj'
-#              arguments: '-r $(Runtime) -c Release --collect:"XPlat Code Coverage"'
-#          - task: PublishCodeCoverageResults@2
-#            displayName: 'Publish coverage'
-#            inputs:
-#              summaryFileLocation: '$(Agent.TempDirectory)/*/coverage.cobertura.xml'
           - task: DotNetCoreCLI@2
             name: Publish
             inputs:
               command: 'publish'
               projects: 'src/**/Worker.fsproj'
-              arguments: '-r $(Runtime) -c Release --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)'
+              arguments: '-r $(Runtime) -c Release --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)/az -p:DefineConstants=AZ'
               publishWebProjects: false
               zipAfterPublish: false
           - task: PublishBuildArtifacts@1
             name: Pack
             inputs:
-              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-              ArtifactName: 'drop'
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/az'
+              ArtifactName: 'az'
+      - job: build_aws
+        displayName: 'Build AWS'
+        dependsOn: restore
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: '9.x'
+          - task: DotNetCoreCLI@2
+            name: Build
+            inputs:
+              command: 'build'
+              projects: 'src/**/Worker.fsproj'
+              arguments: '-r $(Runtime) -c Release -p:DefineConstants=AWS'
+              publishWebProjects: false
+          - task: DotNetCoreCLI@2
+            name: Publish
+            inputs:
+              command: 'publish'
+              projects: 'src/**/Worker.fsproj'
+              arguments: '-r $(Runtime) -c Release --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)/aws -p:DefineConstants=AWS'
+              publishWebProjects: false
+              zipAfterPublish: false
+          - task: PublishBuildArtifacts@1
+            name: Pack
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)/aws'
+              ArtifactName: 'aws'
   - stage: publish_dev
-    displayName: 'Publish DEV image'
+    displayName: 'Publish DEV images'
     trigger: manual
     jobs:
-      - deployment: publish_dev
-        displayName: 'Publish DEV image'
+      - deployment: publish_dev_azure
+        displayName: 'Publish Azure DEV images'
         environment: 'dev'
         strategy:
           runOnce:
             deploy:
               steps:
                 - download: current
-                  artifact: drop
+                  artifact: az
 
                 - task: Docker@2
-                  displayName: Build and push an image to container registry
+                  displayName: Build and push Azure image to container registry
                   inputs:
                     command: buildAndPush
                     repository: $(repository)
-                    dockerfile: "$(Pipeline.Workspace)/drop/Worker/Dockerfile"
+                    dockerfile: "$(Pipeline.Workspace)/az/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      0.0.$(Build.BuildId)-alpha
-                      nightly
+                      0.0.$(Build.BuildId)-az-alpha
+                      az-nightly
+      - deployment: publish_dev_aws
+        displayName: 'Publish AWS DEV images'
+        environment: 'dev'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: aws
+
+                - task: Docker@2
+                  displayName: Build and push AWS image to container registry
+                  inputs:
+                    command: buildAndPush
+                    repository: $(repository)
+                    dockerfile: "$(Pipeline.Workspace)/aws/Worker/Dockerfile"
+                    containerRegistry: $(registry)
+                    tags: |
+                      0.0.$(Build.BuildId)-aws-alpha
+                      aws-nightly
   - stage: publish_prd
-    displayName: 'Publish PRD image'
+    displayName: 'Publish PRD images'
     trigger: manual
     jobs:
-      - deployment: publish_prd
-        displayName: 'Publish PRD image'
+      - deployment: publish_prd_azure
+        displayName: 'Publish Azure PRD images'
         environment: 'prd'
         strategy:
           runOnce:
             deploy:
               steps:
                 - download: current
-                  artifact: drop
+                  artifact: az
 
                 - task: Docker@2
-                  displayName: Build and push an image to container registry
+                  displayName: Build and push Azure image to container registry
                   inputs:
                     command: buildAndPush
                     repository: $(repository)
-                    dockerfile: "$(Pipeline.Workspace)/drop/Worker/Dockerfile"
+                    dockerfile: "$(Pipeline.Workspace)/az/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      0.0.$(Build.BuildId)
-                      stable
+                      0.0.$(Build.BuildId)-az
+                      az-stable
+      - deployment: publish_prd_aws
+        displayName: 'Publish AWS PRD images'
+        environment: 'prd'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: aws
+
+                - task: Docker@2
+                  displayName: Build and push AWS image to container registry
+                  inputs:
+                    command: buildAndPush
+                    repository: $(repository)
+                    dockerfile: "$(Pipeline.Workspace)/aws/Worker/Dockerfile"
+                    containerRegistry: $(registry)
+                    tags: |
+                      0.0.$(Build.BuildId)-aws
+                      aws-stable
