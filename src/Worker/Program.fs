@@ -34,12 +34,12 @@ module Program =
       .BuildSingleton<FFMpegSettings, IConfiguration>(_.GetSection(FFMpegSettings.SectionName).Get<FFMpegSettings>())
 
     services
-    #if AZ
+#if AZ
     |> Startup.addAzureInfra ctx.Configuration
-    #endif
-    #if AWS
+#endif
+#if AWS
     |> Startup.addAWSInfra ctx.Configuration
-    #endif
+#endif
 
     services.AddHostedService<Worker.Worker>() |> ignore
 

@@ -18,10 +18,7 @@ module Startup =
 
     services.BuildSingleton<StorageSettings, IOptions<StorageSettings>>(_.Value)
 
-    services
-      .AddDefaultAWSOptions(cfg.GetAWSOptions())
-      .AddAWSService<IAmazonSQS>()
-      .AddAWSService<IAmazonS3>()
+    services.AddDefaultAWSOptions(cfg.GetAWSOptions()).AddAWSService<IAmazonSQS>().AddAWSService<IAmazonS3>()
 
     services
       .AddSingleton<IInputQueue, InputQueue>()
