@@ -8,7 +8,8 @@ open shortid.Configuration
 [<RequireQualifiedAccess>]
 module File =
   let create =
-    let idGenerationOptions = GenerationOptions(useSpecialCharacters = false, length = 12)
+    let idGenerationOptions =
+      GenerationOptions(useSpecialCharacters = false, length = 12)
 
     fun extension ->
       let name = ShortId.Generate(idGenerationOptions)
