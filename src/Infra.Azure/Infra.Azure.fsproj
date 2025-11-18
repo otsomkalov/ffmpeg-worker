@@ -8,21 +8,21 @@
   <ItemGroup>
     <Compile Include="Settings.fs"/>
     <Compile Include="Queue.fs"/>
-    <Compile Include="Storage.fs" />
+    <Compile Include="Storage.fs"/>
     <Compile Include="Startup.fs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
-    <PackageReference Include="Azure.Storage.Queues" Version="12.24.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.10" />
-    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.18"/>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0"/>
+    <PackageReference Include="Azure.Storage.Queues" Version="12.24.0"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0"/>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0"/>
+    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.20"/>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.fsproj"/>
-    <ProjectReference Include="..\Infra\Infra.fsproj" />
+    <ProjectReference Include="..\Infra\Infra.fsproj"/>
   </ItemGroup>
 
 </Project>
