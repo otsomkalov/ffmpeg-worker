@@ -15,6 +15,7 @@ open Microsoft.Extensions.Logging
 open Worker.Settings
 open otsom.fs.Extensions
 open Domain.Workflows
+open FsToolkit.ErrorHandling
 
 type Worker
   (
