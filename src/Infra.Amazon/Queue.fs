@@ -6,7 +6,7 @@ open Domain.Repos
 open Infra.Helpers
 open Infra.Queue
 open Microsoft.Extensions.Logging
-open otsom.fs.Extensions
+open FsToolkit.ErrorHandling
 
 module Queue =
   type MsgClient(sqsClient: IAmazonSQS, settings: StorageSettings, popReceipt: string) =

@@ -7,7 +7,7 @@ open Domain.Core
 open Domain.Repos
 open Infra
 open Microsoft.Extensions.Logging
-open otsom.fs.Extensions
+open FsToolkit.ErrorHandling
 
 module Storage =
   type InputStorage(s3Client: IAmazonS3, storageSettings: StorageSettings, logger: ILogger<InputStorage>) =

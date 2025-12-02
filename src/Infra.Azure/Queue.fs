@@ -7,7 +7,7 @@ open Infra.Azure
 open Infra.Helpers
 open Infra.Queue
 open Microsoft.Extensions.Logging
-open otsom.fs.Extensions
+open FsToolkit.ErrorHandling
 
 module Queue =
   type internal QueueType =

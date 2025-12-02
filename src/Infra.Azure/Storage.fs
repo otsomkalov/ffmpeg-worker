@@ -9,6 +9,7 @@ open Infra
 open Infra.Azure
 open Microsoft.Extensions.Logging
 open otsom.fs.Extensions
+open FsToolkit.ErrorHandling
 
 type InputStorage(blobServiceClient: BlobServiceClient, storageSettings: StorageSettings, logger: ILogger<InputStorage>) =
   let containerClient =
