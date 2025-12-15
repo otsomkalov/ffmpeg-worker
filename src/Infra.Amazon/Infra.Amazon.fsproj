@@ -14,13 +14,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.6"/>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.14.1"/>
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0"/>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0"/>
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0"/>
-    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.15"/>
-    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.20"/>
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.8"/>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.14.3"/>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1"/>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.1"/>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.1"/>
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.17"/>
+    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.24"/>
   </ItemGroup>
 
   <ItemGroup>
