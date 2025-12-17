@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <UserSecretsId>dotnet-Worker-4D7F76B9-D222-454A-9772-79BD789BB07C</UserSecretsId>
   </PropertyGroup>
 
@@ -19,11 +19,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.fsproj"/>
   </ItemGroup>
-  
+
   <ItemGroup Condition="$(DefineConstants.Contains('AWS'))">
     <ProjectReference Include="..\Infra.Amazon\Infra.Amazon.fsproj" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="$(DefineConstants.Contains('AZ'))">
     <ProjectReference Include="..\Infra.Azure\Infra.Azure.fsproj" />
   </ItemGroup>
