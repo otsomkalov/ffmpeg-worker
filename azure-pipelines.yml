@@ -8,14 +8,12 @@ pr:
     include:
       - main
 
-pool:
-  vmImage: 'ubuntu-latest'
-
 variables:
   Runtime: 'linux-musl-x64'
   ProjectVersion: '0.0'
   BuildNumber: '$(Build.BuildId)'
   VersionNumber: '$(projectVersion).$(buildNumber)'
+  Configuration: 'Release'
 
 stages:
   - stage: build
@@ -26,7 +24,7 @@ stages:
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '9.x'
+              version: '10.x'
           - task: DotNetCoreCLI@2
             name: Install_Fantomas
             inputs:
@@ -45,27 +43,37 @@ stages:
             inputs:
               command: 'restore'
               projects: '**/*.fsproj'
-              arguments: '-r $(Runtime)'
+              arguments: '-r $(Runtime) --configuration $(Configuration)'
+          - task: DotNetCoreCLI@2
+            name: Test
+            inputs:
+              command: 'test'
+              projects: 'tests/**/*.fsproj'
+              arguments: '-c $(Configuration) --collect:"XPlat Code Coverage"'
+          - task: PublishCodeCoverageResults@2
+            displayName: 'Publish coverage'
+            inputs:
+              summaryFileLocation: '$(Agent.TempDirectory)/*/coverage.cobertura.xml'
       - job: build_azure
         displayName: 'Build Azure'
         dependsOn: restore
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '9.x'
+              version: '10.x'
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
               command: 'build'
               projects: 'src/**/Worker.fsproj'
-              arguments: '-r $(Runtime) -c Release -p:DefineConstants=AZ'
+              arguments: '-r $(Runtime) --configuration $(Configuration) -p:DefineConstants=AZ'
               publishWebProjects: false
           - task: DotNetCoreCLI@2
             name: Publish
             inputs:
               command: 'publish'
               projects: 'src/**/Worker.fsproj'
-              arguments: '-r $(Runtime) -c Release --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)/az -p:DefineConstants=AZ'
+              arguments: '-r $(Runtime) --configuration $(Configuration) --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)/az -p:DefineConstants=AZ'
               publishWebProjects: false
               zipAfterPublish: false
           - task: PublishBuildArtifacts@1
@@ -79,20 +87,20 @@ stages:
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '9.x'
+              version: '10.x'
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
               command: 'build'
               projects: 'src/**/Worker.fsproj'
-              arguments: '-r $(Runtime) -c Release -p:DefineConstants=AWS'
+              arguments: '-r $(Runtime) --configuration $(Configuration) -p:DefineConstants=AWS'
               publishWebProjects: false
           - task: DotNetCoreCLI@2
             name: Publish
             inputs:
               command: 'publish'
               projects: 'src/**/Worker.fsproj'
-              arguments: '-r $(Runtime) -c Release --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)/aws -p:DefineConstants=AWS'
+              arguments: '-r $(Runtime) --configuration $(Configuration) --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)/aws -p:DefineConstants=AWS'
               publishWebProjects: false
               zipAfterPublish: false
           - task: PublishBuildArtifacts@1
