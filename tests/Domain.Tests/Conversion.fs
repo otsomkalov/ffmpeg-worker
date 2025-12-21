@@ -1,6 +1,5 @@
 module Conversion
 
-open System
 open Domain
 open Domain.Repos
 open Domain.Settings
@@ -10,11 +9,9 @@ open Moq
 open Xunit
 
 type Conversion() =
-  let operationId = Guid.NewGuid().ToString()
-
   let conversionId = "test-id"
 
-  let targetExtension = "mp4"
+  let targetExtension = ".mp4"
 
   let request: Conversion.Request =
     { Id = conversionId
@@ -23,13 +20,13 @@ type Conversion() =
   let inputFile: File =
     { Name = "input"
       FullName = "input.webm"
-      Extension = "webm"
+      Extension = ".webm"
       Path = "C:/input.webm" }
 
   let convertedFile: File =
     { Name = "output"
       FullName = "output.mp4"
-      Extension = "mp4"
+      Extension = ".mp4"
       Path = "C:/output.mp4" }
 
   let inputStorage = Mock<IInputStorage>()
@@ -43,8 +40,6 @@ type Conversion() =
   let outputStorage = Mock<IOutputStorage>()
 
   do outputStorage.Setup(_.UploadFile(convertedFile)).ReturnsAsync(()) |> ignore
-
-  let queue = Mock<IInputQueue>()
 
   let outputQueue = Mock<IOutputQueue>()
 
@@ -62,12 +57,11 @@ type Conversion() =
 
   let options = Mock<IOptions<AppSettings>>()
 
-  do options.Setup(_.Value).Returns({ TargetExtension = targetExtension }) |> ignore
-
   let deleteLocalFile = fun _ -> ()
 
   [<Fact>]
-  let ``run should send success message and cleanup local and remote files on success`` () =
+  let ``run converts to target extension from the settings`` () =
+    options.Setup(_.Value).Returns({ TargetExtension = targetExtension }) |> ignore
 
     converter.Setup(_.Convert(inputFile, targetExtension)).ReturnsAsync(Ok(convertedFile))
 
@@ -91,7 +85,33 @@ type Conversion() =
     }
 
   [<Fact>]
+  let ``run converts to target extension from input file`` () =
+    options.Setup(_.Value).Returns({ TargetExtension = null }) |> ignore
+
+    converter.Setup(_.Convert(inputFile, inputFile.Extension)).ReturnsAsync(Ok(convertedFile))
+
+    let sut =
+      Conversion.run
+        inputStorage.Object
+        outputStorage.Object
+        inputMsgClient.Object
+        outputQueue.Object
+        options.Object
+        converter.Object
+        deleteLocalFile
+
+    task {
+      do! sut request
+
+      inputStorage.VerifyAll()
+      inputMsgClient.VerifyAll()
+      converter.VerifyAll()
+      outputStorage.VerifyAll()
+    }
+
+  [<Fact>]
   let ``run should send failure message and cleanup downloaded files on failure`` () =
+    options.Setup(_.Value).Returns({ TargetExtension = targetExtension }) |> ignore
     converter.Setup(_.Convert(inputFile, targetExtension)).ReturnsAsync(Result.Error ConvertError)
 
     let sut =
@@ -110,5 +130,7 @@ type Conversion() =
       inputStorage.Verify(_.DownloadFile(request.Name))
       inputMsgClient.VerifyAll()
       converter.VerifyAll()
+      outputStorage.VerifyNoOtherCalls()
+      outputQueue.Verify(_.SendSuccessMessage(It.IsAny<string>()), Times.Never)
       outputQueue.Verify(_.SendFailureMessage())
     }

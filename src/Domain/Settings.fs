@@ -1,4 +1,4 @@
 ﻿module Domain.Settings
 
 [<CLIMutable>]
-type AppSettings = { TargetExtension: string }
+type AppSettings = { TargetExtension: string | null }
