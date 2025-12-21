@@ -3,8 +3,9 @@
 open System.Diagnostics
 open System.Threading
 open System.Threading.Tasks
-open Domain.Core
+open Domain
 open Domain.Repos
+open Domain.Settings
 open Infra
 open Infra.Helpers
 open Infra.Queue
@@ -12,21 +13,22 @@ open Microsoft.ApplicationInsights
 open Microsoft.ApplicationInsights.DataContracts
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Options
 open Worker.Settings
-open otsom.fs.Extensions
 open Domain.Workflows
 open FsToolkit.ErrorHandling
 
 type Worker
   (
     logger: ILogger<Worker>,
-    appSettings: AppSettings,
-    convertFile: Converter.Convert,
+    workerSettings: WorkerSettings,
     telemetryClient: TelemetryClient,
     inputQueue: IInputQueue,
     getOutputQueue: GetOutputQueue,
     inputStorage: IInputStorage,
-    outputStorage: IOutputStorage
+    outputStorage: IOutputStorage,
+    converter: IConverter,
+    appOptions: IOptions<AppSettings>
   ) =
   inherit BackgroundService()
 
@@ -38,24 +40,20 @@ type Worker
       { Id = inputMessage.Data.Id
         Name = inputMessage.Data.Name }
 
-    let io: Conversion.RunIO =
-      { Convert = convertFile
-        DeleteLocalFile = LocalStorage.deleteFile }
-
     let inputMsgClient =
       inputQueue.GetInputMsgClient(queueMessage.Id, queueMessage.PopReceipt)
 
     let outputQueue = getOutputQueue (inputMessage.OperationId, inputMessage.Data.Id)
 
     let convert =
-      Conversion.run inputStorage outputStorage inputMsgClient outputQueue io
+      Conversion.run inputStorage outputStorage inputMsgClient outputQueue appOptions converter LocalStorage.deleteFile
 
     task {
       use activity = (new Activity("Convert")).SetParentId(inputMessage.OperationId)
 
       use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
 
-      operation.Telemetry.Context.Cloud.RoleName <- appSettings.Name
+      operation.Telemetry.Context.Cloud.RoleName <- workerSettings.Name
 
       try
         do! convert request
@@ -81,5 +79,5 @@ type Worker
       with e ->
         logger.LogError(e, "Worker error")
 
-      do! Task.Delay(appSettings.Delay)
+      do! Task.Delay(workerSettings.Delay)
   }

@@ -8,11 +8,17 @@
   <ItemGroup>
     <Compile Include="Core.fs"/>
     <Compile Include="Repos.fs"/>
+    <Compile Include="Settings.fs"/>
     <Compile Include="Workflows.fs"/>
+    <Compile Include="Startup.fs"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="otsom.fs.Extensions" Version="0.0.52" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.1"/>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.1"/>
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1"/>
+    <PackageReference Include="otsom.fs.Extensions" Version="0.0.52"/>
+    <PackageReference Include="shortid" Version="4.0.0"/>
   </ItemGroup>
 
 </Project>

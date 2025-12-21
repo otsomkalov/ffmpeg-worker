@@ -3,13 +3,11 @@
 open System.IO
 open System.Threading.Tasks
 open Azure.Storage.Blobs
-open Domain.Core
 open Domain.Repos
-open Infra
 open Infra.Azure
 open Microsoft.Extensions.Logging
-open otsom.fs.Extensions
 open FsToolkit.ErrorHandling
+open Domain
 
 type InputStorage(blobServiceClient: BlobServiceClient, storageSettings: StorageSettings, logger: ILogger<InputStorage>) =
   let containerClient =

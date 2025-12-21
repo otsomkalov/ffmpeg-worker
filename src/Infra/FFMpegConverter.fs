@@ -2,25 +2,19 @@
 
 open System
 open System.Diagnostics
-open System.Threading.Tasks
-open Domain.Workflows
+open Domain
 open Infra.Settings
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Options
 
-module FFMpegConverter =
-  let convert (settings: FFMpegSettings) (loggerFactory: ILoggerFactory) : Converter.Convert =
-    let logger = loggerFactory.CreateLogger(nameof Converter.Convert)
+type FFMpegConverter(options: IOptions<FFMpegSettings>, logger: ILogger<FFMpegConverter>) =
+  let settings = options.Value
 
-    fun file ->
-      let targetExtension =
-        settings.TargetExtension
-        |> Option.ofObj
-        |> Option.filter (String.IsNullOrEmpty >> not)
-        |> Option.defaultValue file.Extension
-
+  interface IConverter with
+    member this.Convert(inputFile, targetExtension) = task {
       let outputFile = File.create targetExtension
 
-      let arguments = [ $"-i {file.Path}"; settings.Arguments; outputFile.Path ]
+      let arguments = [ $"-i {inputFile.Path}"; settings.Arguments; outputFile.Path ]
 
       let processStartInfo =
         ProcessStartInfo(
@@ -31,29 +25,27 @@ module FFMpegConverter =
         )
 
       try
-        task {
-          logger.LogInformation("Starting conversion of {InputFileName} to {OutputFileName}", file.FullName, outputFile.FullName)
+        logger.LogInformation("Starting conversion of {InputFileName} to {OutputFileName}", inputFile.FullName, outputFile.FullName)
 
-          use pcs = Process.Start(processStartInfo)
+        use pcs = Process.Start(processStartInfo)
 
-          let! ffmpegOutput = pcs.StandardError.ReadToEndAsync()
+        let! ffmpegOutput = pcs.StandardError.ReadToEndAsync()
 
-          do! pcs.WaitForExitAsync()
+        do! pcs.WaitForExitAsync()
 
-          return
-            if pcs.ExitCode = 0 then
-              logger.LogInformation(
-                "Conversion of {InputFileName} to {OutputFileName} done! FFMpeg output: {FFMpegOutput}",
-                file.FullName,
-                outputFile.FullName,
-                ffmpegOutput
-              )
+        if pcs.ExitCode = 0 then
+          logger.LogInformation(
+            "Conversion of {InputFileName} to {OutputFileName} done! FFMpeg output: {FFMpegOutput}",
+            inputFile.FullName,
+            outputFile.FullName,
+            ffmpegOutput
+          )
 
-              outputFile |> Ok
-            else
-              logger.LogError("FFMpeg error: {FFMpegError}", ffmpegOutput)
-              Converter.ConvertError |> Error
-        }
+          return outputFile |> Ok
+        else
+          logger.LogError("FFMpeg error: {FFMpegError}", ffmpegOutput)
+          return ConvertError |> Error
       with e ->
         logger.LogError(e, "Error during file conversion:")
-        Converter.ConvertError |> Error |> Task.FromResult
+        return ConvertError |> Error
+    }
