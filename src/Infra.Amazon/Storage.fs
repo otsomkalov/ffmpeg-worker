@@ -3,11 +3,10 @@
 open System.IO
 open System.Threading.Tasks
 open Amazon.S3
-open Domain.Core
 open Domain.Repos
-open Infra
 open Microsoft.Extensions.Logging
 open FsToolkit.ErrorHandling
+open Domain
 
 module Storage =
   type InputStorage(s3Client: IAmazonS3, storageSettings: StorageSettings, logger: ILogger<InputStorage>) =

@@ -1,33 +1,32 @@
 module Conversion
 
-open System
-open System.Threading.Tasks
-open Domain.Core
+open Domain
 open Domain.Repos
+open Domain.Settings
 open Domain.Workflows
+open Microsoft.Extensions.Options
 open Moq
 open Xunit
-open FsUnit.Xunit
 
 type Conversion() =
-  let operationId = Guid.NewGuid().ToString()
-
   let conversionId = "test-id"
+
+  let targetExtension = ".mp4"
 
   let request: Conversion.Request =
     { Id = conversionId
-      Name = "test.webm" }
+      Name = "input.webm" }
 
   let inputFile: File =
     { Name = "input"
       FullName = "input.webm"
-      Extension = "webm"
+      Extension = ".webm"
       Path = "C:/input.webm" }
 
   let convertedFile: File =
     { Name = "output"
       FullName = "output.mp4"
-      Extension = "mp4"
+      Extension = ".mp4"
       Path = "C:/output.mp4" }
 
   let inputStorage = Mock<IInputStorage>()
@@ -42,8 +41,6 @@ type Conversion() =
 
   do outputStorage.Setup(_.UploadFile(convertedFile)).ReturnsAsync(()) |> ignore
 
-  let queue = Mock<IInputQueue>()
-
   let outputQueue = Mock<IOutputQueue>()
 
   do
@@ -56,41 +53,84 @@ type Conversion() =
 
   do inputMsgClient.Setup(_.Delete()).ReturnsAsync(()) |> ignore
 
-  let io: Conversion.RunIO =
-    { Convert =
-        fun file ->
-          file |> should equal inputFile
+  let converter = Mock<IConverter>()
 
-          convertedFile |> Result.Ok |> Task.FromResult
-      DeleteLocalFile = fun file -> [ inputFile; convertedFile ] |> should contain file }
+  let options = Mock<IOptions<AppSettings>>()
+
+  let deleteLocalFile = fun _ -> ()
 
   [<Fact>]
-  let ``run should send success message and cleanup local and remote files on success`` () =
+  let ``run converts to target extension from the settings`` () =
+    options.Setup(_.Value).Returns({ TargetExtension = targetExtension }) |> ignore
+
+    converter.Setup(_.Convert(inputFile, targetExtension)).ReturnsAsync(Ok(convertedFile))
+
     let sut =
-      Conversion.run inputStorage.Object outputStorage.Object inputMsgClient.Object outputQueue.Object io
+      Conversion.run
+        inputStorage.Object
+        outputStorage.Object
+        inputMsgClient.Object
+        outputQueue.Object
+        options.Object
+        converter.Object
+        deleteLocalFile
 
     task {
       do! sut request
 
       inputStorage.VerifyAll()
+      inputMsgClient.VerifyAll()
+      converter.VerifyAll()
+      outputStorage.VerifyAll()
+    }
+
+  [<Fact>]
+  let ``run converts to target extension from input file`` () =
+    options.Setup(_.Value).Returns({ TargetExtension = null }) |> ignore
+
+    converter.Setup(_.Convert(inputFile, inputFile.Extension)).ReturnsAsync(Ok(convertedFile))
+
+    let sut =
+      Conversion.run
+        inputStorage.Object
+        outputStorage.Object
+        inputMsgClient.Object
+        outputQueue.Object
+        options.Object
+        converter.Object
+        deleteLocalFile
+
+    task {
+      do! sut request
+
+      inputStorage.VerifyAll()
+      inputMsgClient.VerifyAll()
+      converter.VerifyAll()
+      outputStorage.VerifyAll()
     }
 
   [<Fact>]
   let ``run should send failure message and cleanup downloaded files on failure`` () =
-    let io =
-      { io with
-          Convert =
-            fun file ->
-              file |> should equal inputFile
-
-              Converter.ConvertError |> Result.Error |> Task.FromResult }
+    options.Setup(_.Value).Returns({ TargetExtension = targetExtension }) |> ignore
+    converter.Setup(_.Convert(inputFile, targetExtension)).ReturnsAsync(Result.Error ConvertError)
 
     let sut =
-      Conversion.run inputStorage.Object outputStorage.Object inputMsgClient.Object outputQueue.Object io
+      Conversion.run
+        inputStorage.Object
+        outputStorage.Object
+        inputMsgClient.Object
+        outputQueue.Object
+        options.Object
+        converter.Object
+        deleteLocalFile
 
     task {
       do! sut request
 
       inputStorage.Verify(_.DownloadFile(request.Name))
-      inputStorage.VerifyNoOtherCalls()
+      inputMsgClient.VerifyAll()
+      converter.VerifyAll()
+      outputStorage.VerifyNoOtherCalls()
+      outputQueue.Verify(_.SendSuccessMessage(It.IsAny<string>()), Times.Never)
+      outputQueue.Verify(_.SendFailureMessage())
     }

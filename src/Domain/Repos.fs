@@ -1,7 +1,6 @@
 ﻿namespace Domain
 
 open System.Threading.Tasks
-open Domain.Core
 
 module Repos =
   type QueueMessage =

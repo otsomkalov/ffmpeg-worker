@@ -6,18 +6,18 @@ Background FFMpeg worker powered by Azure Storage Blob/Queue or AWS S3/SQS
 
 The next environment variables are used by an app and shared between both Azure and AWS versions:
 
-| Parameter                             | Required? | Description                                                                                   |
-|---------------------------------------|-----------|-----------------------------------------------------------------------------------------------|
-| APPLICATIONINSIGHTS_CONNECTION_STRING | false     | Azure App Insights connection string for logging & tracebility                                |
-| FFMpeg__Path                          | true      | FFMpeg full path                                                                              |
-| FFMpeg__Arguments                     | true      | Arguments for FFMpeg conversion                                                               |
-| Storage__Input__Container             | false     | Name of azure storage container for input files to convert. Default name: input               |
-| Storage__Input__Queue                 | false     | Name of azure storage queue for requests to convert file. Default name: input                 |
-| Storage__Output__Container            | false     | Name of azure storage container for output files after conversion. Default name: output       |
-| Storage__Output__Queue                | false     | Name of azure storage queue for results of conversion. Default name: output                   |
-| Delay                                 | false     | Delay between job executions in hh:mm:ss format. Default: 00:01:00                            |
-| Name                                  | true      | Name of an application instance for traceability                                              |
-| FFMpeg__TargetExtension               | false     | Target extension of output file with dot. If not set - extension of source file will be taken |
+| Parameter                             | Required? | Description                                                                                      |
+|---------------------------------------|-----------|--------------------------------------------------------------------------------------------------|
+| APPLICATIONINSIGHTS_CONNECTION_STRING | false     | Azure App Insights connection string for logging & tracebility                                   |
+| FFMpeg__Path                          | true      | FFMpeg full path                                                                                 |
+| FFMpeg__Arguments                     | true      | Arguments for FFMpeg conversion                                                                  |
+| Storage__Input__Container             | false     | Name of azure storage container for input files to convert. Default name: input                  |
+| Storage__Input__Queue                 | false     | Name of azure storage queue for requests to convert file. Default name: input                    |
+| Storage__Output__Container            | false     | Name of azure storage container for output files after conversion. Default name: output          |
+| Storage__Output__Queue                | false     | Name of azure storage queue for results of conversion. Default name: output                      |
+| Delay                                 | false     | Delay between job executions in hh:mm:ss format. Default: 00:01:00                               |
+| Name                                  | true      | Name of an application instance for traceability                                                 |
+| TargetExtension                       | false     | Target extension of output file with dot. If not set - extension of the source file will be used |
 
 ### Azure
 
@@ -33,7 +33,7 @@ Refer to the AWS guide in setting up a connection. No additional parameters are 
 
 ### Docker
 
-Use [pre-built image](https://hub.docker.com/repository/docker/infinitu1327/ffmpeg-azure-storage-worker/general) from DockerHub.
+Use [pre-built image](https://hub.docker.com/repository/docker/infinitu1327/ffmpeg-worker/general) from DockerHub.
 
 There are multiple tags available:
 - `aws-nightly` - latest AWS build for PR
@@ -65,3 +65,4 @@ There are multiple tags available:
 
 * [azure-sdk-for-net](https://github.com/Azure/azure-sdk-for-net) - The official Azure SDK for .NET
 * [aws-sdk-net](https://github.com/aws/aws-sdk-net) - The official AWS SDK for .NET.
+* [FFmpeg](https://ffmpeg.org/) - A complete, cross-platform solution to record, convert and stream audio and video.

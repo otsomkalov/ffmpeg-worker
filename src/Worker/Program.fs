@@ -1,5 +1,6 @@
 namespace Worker
 
+open Domain
 open Infra
 open Infra.Settings
 open Microsoft.Extensions.Configuration
@@ -29,21 +30,23 @@ module Program =
     ()
 
   let private configureServices (ctx: HostBuilderContext) (services: IServiceCollection) =
-    services
-      .BuildSingleton<AppSettings, IConfiguration>(_.Get<AppSettings>())
-      .BuildSingleton<FFMpegSettings, IConfiguration>(_.GetSection(FFMpegSettings.SectionName).Get<FFMpegSettings>())
+    let cfg = ctx.Configuration
+
+    services.BuildSingleton<WorkerSettings, IConfiguration>(_.Get<WorkerSettings>())
+
+    services.Configure<FFMpegSettings>(cfg.GetRequiredSection(FFMpegSettings.SectionName))
+    services.AddSingleton<IConverter, FFMpegConverter>()
 
     services
+    |> Startup.addDomain cfg
 #if AZ
-    |> Startup.addAzureInfra ctx.Configuration
+    |> Startup.addAzureInfra cfg
 #endif
 #if AWS
     |> Startup.addAWSInfra ctx.Configuration
 #endif
 
     services.AddHostedService<Worker.Worker>() |> ignore
-
-    services.BuildSingleton<Converter.Convert, FFMpegSettings, ILoggerFactory>(FFMpegConverter.convert)
 
     services.AddApplicationInsightsTelemetryWorkerService()
 

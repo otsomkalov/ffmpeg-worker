@@ -3,7 +3,6 @@
 [<CLIMutable>]
 type FFMpegSettings =
   { Path: string
-    Arguments: string
-    TargetExtension: string }
+    Arguments: string }
 
   static member SectionName = "FFMpeg"
