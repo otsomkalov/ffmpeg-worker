@@ -20,7 +20,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3"/>
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.3"/>
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.22"/>
-    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.26"/>
+    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.28"/>
   </ItemGroup>
 
   <ItemGroup>
