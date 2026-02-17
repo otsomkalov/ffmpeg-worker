@@ -15,12 +15,12 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.SQS" Version="4.0.2.14"/>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.18.4"/>
+    <PackageReference Include="AWSSDK.S3" Version="4.0.18.6"/>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.3"/>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3"/>
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.3"/>
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.22"/>
-    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.26"/>
+    <PackageReference Include="otsom.fs.Extensions.DependencyInjection" Version="0.0.28"/>
   </ItemGroup>
 
   <ItemGroup>
