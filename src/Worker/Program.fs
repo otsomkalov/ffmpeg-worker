@@ -4,11 +4,9 @@ open Domain
 open Infra
 open Infra.Settings
 open Microsoft.Extensions.Configuration
-open Microsoft.Extensions.Logging
 open Microsoft.FSharp.Core
 open Worker.Settings
 open otsom.fs.Extensions.DependencyInjection
-open Domain.Workflows
 
 #if AWS
 open Infra.Amazon
