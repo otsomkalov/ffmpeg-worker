@@ -6,12 +6,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="3.0.0"/>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3"/>
+
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0"/>
+
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0"/>
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0"/>
+
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.6.0"/>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Settings.fs"/>
+    <Compile Include="Observability.fs"/>
     <Compile Include="Worker.fs"/>
     <Compile Include="Program.fs"/>
   </ItemGroup>

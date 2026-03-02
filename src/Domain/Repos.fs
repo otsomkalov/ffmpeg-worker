@@ -1,5 +1,6 @@
 ﻿namespace Domain
 
+open System.Collections.Generic
 open System.Threading.Tasks
 
 module Repos =
@@ -26,4 +27,4 @@ module Repos =
     abstract GetMessage: unit -> Task<QueueMessage option>
     abstract GetInputMsgClient: string * string -> IInputMsgClient
 
-  type GetOutputQueue = string * string -> IOutputQueue
+  type GetOutputQueue = Dictionary<string, string> * string -> IOutputQueue

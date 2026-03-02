@@ -40,7 +40,7 @@ module Queue =
     interface IOutputQueue with
       member this.SendSuccessMessage(name) = task {
         let message: BaseMessage<ConversionResultMessage> =
-          { OperationId = operationId
+          { Context = operationId
             Data =
               { Id = conversionId
                 Result = ConversionResult.Success { Name = name } } }
@@ -54,7 +54,7 @@ module Queue =
 
       member this.SendFailureMessage() = task {
         let message: BaseMessage<ConversionResultMessage> =
-          { OperationId = operationId
+          { Context = operationId
             Data =
               { Id = conversionId
                 Result = ConversionResult.Error { Error = "Error during conversion!" } } }

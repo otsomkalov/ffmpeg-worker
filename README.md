@@ -9,6 +9,7 @@ The next environment variables are used by an app and shared between both Azure 
 | Parameter                             | Required? | Description                                                                                      |
 |---------------------------------------|-----------|--------------------------------------------------------------------------------------------------|
 | APPLICATIONINSIGHTS_CONNECTION_STRING | false     | Azure App Insights connection string for logging & tracebility                                   |
+| OTEL_SERVICE_NAME                     | false     | Name of an application instance for traceability                                                 |
 | FFMpeg__Path                          | true      | FFMpeg full path                                                                                 |
 | FFMpeg__Arguments                     | true      | Arguments for FFMpeg conversion                                                                  |
 | Storage__Input__Container             | false     | Name of azure storage container for input files to convert. Default name: input                  |
@@ -16,14 +17,13 @@ The next environment variables are used by an app and shared between both Azure 
 | Storage__Output__Container            | false     | Name of azure storage container for output files after conversion. Default name: output          |
 | Storage__Output__Queue                | false     | Name of azure storage queue for results of conversion. Default name: output                      |
 | Delay                                 | false     | Delay between job executions in hh:mm:ss format. Default: 00:01:00                               |
-| Name                                  | true      | Name of an application instance for traceability                                                 |
 | TargetExtension                       | false     | Target extension of output file with dot. If not set - extension of the source file will be used |
 
 ### Azure
 
-| Parameter                             | Required? | Description                                                                                   |
-|---------------------------------------|-----------|-----------------------------------------------------------------------------------------------|
-| Storage__ConnectionString             | true      | Azure Storage account connection string                                                       |
+| Parameter                 | Required? | Description                             |
+|---------------------------|-----------|-----------------------------------------|
+| Storage__ConnectionString | true      | Azure Storage account connection string |
 
 ### AWS
 
@@ -36,6 +36,7 @@ Refer to the AWS guide in setting up a connection. No additional parameters are 
 Use [pre-built image](https://hub.docker.com/repository/docker/infinitu1327/ffmpeg-worker/general) from DockerHub.
 
 There are multiple tags available:
+
 - `aws-nightly` - latest AWS build for PR
 - `az-nightly` - latest Azure build for PR
 - `aws-stable` - latest AWS build for `main` branch
