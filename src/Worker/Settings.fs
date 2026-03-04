@@ -4,4 +4,4 @@ open System
 
 module Settings =
   [<CLIMutable>]
-  type WorkerSettings = { Name: string; Delay: TimeSpan }
+  type WorkerSettings = { Delay: TimeSpan }

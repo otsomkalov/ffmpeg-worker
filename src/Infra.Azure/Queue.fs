@@ -36,7 +36,7 @@ module Queue =
       member this.GetInputMsgClient(id, popReceipt) =
         InputMsgClient(queue, id, popReceipt) :> IInputMsgClient
 
-  type OutputQueue(logger: ILogger<OutputQueue>, queueClient: QueueServiceClient, settings: StorageSettings, operationId, conversionId) =
+  type OutputQueue(logger: ILogger<OutputQueue>, queueClient: QueueServiceClient, settings: StorageSettings, context, conversionId) =
     let queue = queueClient.GetQueueClient settings.Output.Queue
 
     let sendOutputMessage = JSON.serialize >> queue.SendMessageAsync >> Task.map ignore
@@ -44,7 +44,7 @@ module Queue =
     interface IOutputQueue with
       member this.SendSuccessMessage(name: string) =
         let message: BaseMessage<ConversionResultMessage> =
-          { OperationId = operationId
+          { Context = context
             Data =
               { Id = conversionId
                 Result = ConversionResult.Success { Name = name } } }
@@ -55,7 +55,7 @@ module Queue =
 
       member this.SendFailureMessage() =
         let message: BaseMessage<ConversionResultMessage> =
-          { OperationId = operationId
+          { Context = context
             Data =
               { Id = conversionId
                 Result = ConversionResult.Error { Error = "Error during conversion!" } } }

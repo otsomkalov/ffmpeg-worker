@@ -9,11 +9,11 @@ open Domain.Settings
 open Infra
 open Infra.Helpers
 open Infra.Queue
-open Microsoft.ApplicationInsights
-open Microsoft.ApplicationInsights.DataContracts
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Options
+open OpenTelemetry
+open OpenTelemetry.Context.Propagation
 open Worker.Settings
 open Domain.Workflows
 open FsToolkit.ErrorHandling
@@ -22,7 +22,6 @@ type Worker
   (
     logger: ILogger<Worker>,
     workerSettings: WorkerSettings,
-    telemetryClient: TelemetryClient,
     inputQueue: IInputQueue,
     getOutputQueue: GetOutputQueue,
     inputStorage: IInputStorage,
@@ -43,27 +42,33 @@ type Worker
     let inputMsgClient =
       inputQueue.GetInputMsgClient(queueMessage.Id, queueMessage.PopReceipt)
 
-    let outputQueue = getOutputQueue (inputMessage.OperationId, inputMessage.Data.Id)
+    let outputQueue = getOutputQueue (inputMessage.Context, inputMessage.Data.Id)
 
     let convert =
       Conversion.run inputStorage outputStorage inputMsgClient outputQueue appOptions converter LocalStorage.deleteFile
 
     task {
-      use activity = (new Activity("Convert")).SetParentId(inputMessage.OperationId)
+      let parentContext =
+        Propagators.DefaultTextMapPropagator.Extract(
+          PropagationContext(),
+          inputMessage.Context,
+          fun d key ->
+            match d.TryGetValue key with
+            | true, value -> [ value ]
+            | _ -> []
+        )
 
-      use operation = telemetryClient.StartOperation<RequestTelemetry>(activity)
+      Baggage.Current <- parentContext.Baggage
 
-      operation.Telemetry.Context.Cloud.RoleName <- workerSettings.Name
+      use activity =
+        Observability.ActivitySource.StartActivity("Convert", ActivityKind.Consumer, parentContext.ActivityContext)
 
       try
         do! convert request
-
-        operation.Telemetry.Success <- true
       with e ->
         logger.LogError(e, "Error during processing queue message")
         do! inputMsgClient.Delete()
         do! outputQueue.SendFailureMessage()
-        operation.Telemetry.Success <- false
     }
 
   let runWorker () =

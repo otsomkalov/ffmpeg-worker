@@ -1,8 +1,11 @@
 ﻿namespace Infra.Queue
 
+open System.Collections.Generic
 open System.Text.Json.Serialization
 
-type BaseMessage<'a> = { OperationId: string; Data: 'a }
+type BaseMessage<'a> =
+  { Context: Dictionary<string, string>
+    Data: 'a }
 
 type SuccessfulConversion = { Name: string }
 

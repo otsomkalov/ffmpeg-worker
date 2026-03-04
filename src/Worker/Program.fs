@@ -1,10 +1,14 @@
 namespace Worker
 
+open Azure.Monitor.OpenTelemetry.Exporter
 open Domain
 open Infra
 open Infra.Settings
 open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.Logging
 open Microsoft.FSharp.Core
+open OpenTelemetry.Metrics
+open OpenTelemetry.Trace
 open Worker.Settings
 open otsom.fs.Extensions.DependencyInjection
 
@@ -27,6 +31,14 @@ module Program =
 
     ()
 
+  let private configureLogging (builder: ILoggingBuilder) =
+    builder.AddOpenTelemetry(fun b ->
+      b.IncludeFormattedMessage <- true
+      b.IncludeScopes <- true
+      ())
+
+    ()
+
   let private configureServices (ctx: HostBuilderContext) (services: IServiceCollection) =
     let cfg = ctx.Configuration
 
@@ -46,12 +58,25 @@ module Program =
 
     services.AddHostedService<Worker.Worker>() |> ignore
 
-    services.AddApplicationInsightsTelemetryWorkerService()
+    services
+      .AddOpenTelemetry()
+      .WithMetrics(fun metrics ->
+        metrics.AddRuntimeInstrumentation().AddHttpClientInstrumentation()
+
+        ())
+      .WithTracing(fun tracing ->
+        tracing.AddSource(Observability.ActivitySource.Name, "Azure.Storage.*").AddHttpClientInstrumentation()
+        ())
+      .UseAzureMonitorExporter()
 
     ()
 
   let private createHostBuilder args =
-    Host.CreateDefaultBuilder(args).ConfigureAppConfiguration(configureAppConfig).ConfigureServices(configureServices)
+    Host
+      .CreateDefaultBuilder(args)
+      .ConfigureAppConfiguration(configureAppConfig)
+      .ConfigureLogging(configureLogging)
+      .ConfigureServices(configureServices)
 
   [<EntryPoint>]
   let main args =
