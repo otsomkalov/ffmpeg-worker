@@ -3,7 +3,6 @@
 open System.IO
 open System.Threading.Tasks
 open shortid
-open shortid.Configuration
 
 type File =
   { Name: string
@@ -21,7 +20,7 @@ module Conversion =
 module File =
   let create =
     let idGenerationOptions =
-      GenerationOptions(useSpecialCharacters = false, length = 12)
+      ShortIdOptions(useSpecialCharacters = false, length = 12)
 
     fun extension ->
       let name = ShortId.Generate(idGenerationOptions)
