@@ -19,8 +19,7 @@ module Conversion =
 [<RequireQualifiedAccess>]
 module File =
   let create =
-    let idGenerationOptions =
-      ShortIdOptions(useSpecialCharacters = false, length = 12)
+    let idGenerationOptions = ShortIdOptions(useSpecialCharacters = false, length = 12)
 
     fun extension ->
       let name = ShortId.Generate(idGenerationOptions)
