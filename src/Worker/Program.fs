@@ -1,14 +1,13 @@
 namespace Worker
 
-open Azure.Monitor.OpenTelemetry.Exporter
 open Domain
 open Infra
 open Infra.Settings
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open Microsoft.FSharp.Core
+open OpenTelemetry
 open OpenTelemetry.Metrics
-open OpenTelemetry.Trace
 open Worker.Settings
 open otsom.fs.Extensions.DependencyInjection
 
@@ -61,11 +60,19 @@ module Program =
     services
       .AddOpenTelemetry()
 
-      .WithTracing(fun tracing ->
-        tracing.AddSource(Observability.ActivitySource.Name, "Azure.Storage.*")
+      .WithMetrics(fun metrics ->
+        metrics.AddHttpClientInstrumentation().AddRuntimeInstrumentation()
 
         ())
-      .UseAzureMonitorExporter()
+
+      .WithTracing(fun tracing ->
+        tracing.AddSource("*")
+
+        ())
+      .WithLogging(fun logging ->
+
+        ())
+      .UseOtlpExporter()
 
     ()
 
