@@ -61,9 +61,9 @@ module Program =
       .AddOpenTelemetry()
 
       .WithTracing(fun tracing ->
-        tracing.AddSource(Observability.ActivitySource.Name, "Azure.Storage.*")
-
         tracing.AddProcessor<Observability.AzureStorageQueueReceiveMessageTracesProcessor>()
+
+        tracing.AddSource(Observability.ActivitySource.Name, "Azure.Storage.*")
 
         ())
       .UseAzureMonitorExporter()
