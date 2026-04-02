@@ -7,7 +7,6 @@ open Infra.Settings
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open Microsoft.FSharp.Core
-open OpenTelemetry.Metrics
 open OpenTelemetry.Trace
 open Worker.Settings
 open otsom.fs.Extensions.DependencyInjection
@@ -63,6 +62,8 @@ module Program =
 
       .WithTracing(fun tracing ->
         tracing.AddSource(Observability.ActivitySource.Name, "Azure.Storage.*")
+
+        tracing.AddProcessor<Observability.AzureStorageQueueReceiveMessageTracesProcessor>()
 
         ())
       .UseAzureMonitorExporter()
