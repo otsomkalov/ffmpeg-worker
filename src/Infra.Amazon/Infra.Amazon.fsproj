@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.16"/>
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.22"/>
     <PackageReference Include="AWSSDK.S3" Version="4.0.20.2"/>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.5"/>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5"/>
