@@ -7,7 +7,6 @@ open Infra.Settings
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.Logging
 open Microsoft.FSharp.Core
-open OpenTelemetry.Metrics
 open OpenTelemetry.Trace
 open Worker.Settings
 open otsom.fs.Extensions.DependencyInjection
@@ -66,6 +65,12 @@ module Program =
 
         ())
       .UseAzureMonitorExporter()
+
+    services.ConfigureOpenTelemetryTracerProvider(fun builder ->
+      // Replace Samplers from App Insights with custom one
+      builder.SetSampler(Observability.DropByNameSampler(Set["QueueClient.ReceiveMessage"]))
+
+      ())
 
     ()
 
