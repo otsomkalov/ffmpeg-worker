@@ -61,12 +61,16 @@ module Program =
       .AddOpenTelemetry()
 
       .WithTracing(fun tracing ->
-        tracing.AddProcessor<Observability.AzureStorageQueueReceiveMessageTracesProcessor>()
-
         tracing.AddSource(Observability.ActivitySource.Name, "Azure.Storage.*")
 
         ())
       .UseAzureMonitorExporter()
+
+    services.ConfigureOpenTelemetryTracerProvider(fun builder ->
+      // Replace Samplers from App Insights with custom one
+      builder.SetSampler(Observability.DropByNameSampler(Set["QueueClient.ReceiveMessage"]))
+
+      ())
 
     ()
 

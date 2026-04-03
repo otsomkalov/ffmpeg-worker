@@ -2,13 +2,15 @@
 module Worker.Observability
 
 open System.Diagnostics
-open OpenTelemetry
+open OpenTelemetry.Trace
 
 let ActivitySource = new ActivitySource("Worker")
 
-type AzureStorageQueueReceiveMessageTracesProcessor() =
-  inherit BaseProcessor<Activity>()
+type DropByNameSampler(blockedNames: string Set) =
+  inherit Sampler()
 
-  override this.OnEnd(activity: Activity) =
-    if activity.OperationName <> "QueueClient.ReceiveMessage" then
-      base.OnEnd activity
+  override this.ShouldSample(samplingContext) =
+    if blockedNames |> Set.contains samplingContext.Name then
+      SamplingResult SamplingDecision.Drop
+    else
+      SamplingResult SamplingDecision.RecordAndSample
