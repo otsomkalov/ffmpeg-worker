@@ -53,7 +53,7 @@ stages:
           - task: PublishCodeCoverageResults@2
             displayName: 'Publish coverage'
             inputs:
-              summaryFileLocation: '$(Agent.TempDirectory)/*/coverage.cobertura.xml'
+              summaryFileLocation: '$(Agent.TempDirectory)/*/.coverage'
       - job: build_azure
         displayName: 'Build Azure'
         dependsOn: restore
