@@ -24,7 +24,7 @@ stages:
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '10.x'
+              useGlobalJson: true
           - task: DotNetCoreCLI@2
             name: Install_Fantomas
             inputs:
@@ -49,18 +49,18 @@ stages:
             inputs:
               command: 'test'
               projects: 'tests/**/*.fsproj'
-              arguments: '-c $(Configuration) --collect:"XPlat Code Coverage"'
+              arguments: '--coverage --coverage-output-format cobertura'
           - task: PublishCodeCoverageResults@2
             displayName: 'Publish coverage'
             inputs:
-              summaryFileLocation: '$(Agent.TempDirectory)/*/coverage.cobertura.xml'
+              summaryFileLocation: '$(Agent.TempDirectory)/*.cobertura.xml'
       - job: build_azure
         displayName: 'Build Azure'
         dependsOn: restore
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '10.x'
+              useGlobalJson: true
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
@@ -87,7 +87,7 @@ stages:
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '10.x'
+              useGlobalJson: true
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
