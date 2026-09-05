@@ -60,7 +60,7 @@ stages:
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '10.x'
+              useGlobalJson: true
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
@@ -87,7 +87,7 @@ stages:
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '10.x'
+              useGlobalJson: true
           - task: DotNetCoreCLI@2
             name: Build
             inputs:
