@@ -36,8 +36,10 @@ type Worker
       JSON.deserialize<BaseMessage<{| Id: string; Name: string |}>> queueMessage.Body
 
     let request: Conversion.Request =
-      { Id = inputMessage.Data.Id
-        Name = inputMessage.Data.Name }
+      {
+        Id = inputMessage.Data.Id
+        Name = inputMessage.Data.Name
+      }
 
     let inputMsgClient =
       inputQueue.GetInputMsgClient(queueMessage.Id, queueMessage.PopReceipt)

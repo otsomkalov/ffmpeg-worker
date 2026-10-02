@@ -14,20 +14,26 @@ type Conversion() =
   let targetExtension = ".mp4"
 
   let request: Conversion.Request =
-    { Id = conversionId
-      Name = "input.webm" }
+    {
+      Id = conversionId
+      Name = "input.webm"
+    }
 
   let inputFile: File =
-    { Name = "input"
+    {
+      Name = "input"
       FullName = "input.webm"
       Extension = ".webm"
-      Path = "C:/input.webm" }
+      Path = "C:/input.webm"
+    }
 
   let convertedFile: File =
-    { Name = "output"
+    {
+      Name = "output"
       FullName = "output.mp4"
       Extension = ".mp4"
-      Path = "C:/output.mp4" }
+      Path = "C:/output.mp4"
+    }
 
   let inputStorage = Mock<IInputStorage>()
 

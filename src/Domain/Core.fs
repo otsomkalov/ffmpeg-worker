@@ -5,10 +5,12 @@ open System.Threading.Tasks
 open shortid
 
 type File =
-  { Name: string
+  {
+    Name: string
     FullName: string
     Extension: string
-    Path: string }
+    Path: string
+  }
 
 [<RequireQualifiedAccess>]
 module Conversion =
@@ -26,7 +28,9 @@ module File =
       let fileNameWithExtension = sprintf "%s%s" name extension
       let filePath = Path.Combine(Path.GetTempPath(), fileNameWithExtension)
 
-      { Name = name
+      {
+        Name = name
         FullName = fileNameWithExtension
         Extension = extension
-        Path = filePath }
+        Path = filePath
+      }

@@ -29,9 +29,11 @@ module Queue =
         |> Task.map (Option.bind (fun m -> m.Value |> Option.ofObj))
         |> Task.map (Option.filter (fun m -> not (String.IsNullOrEmpty(m.MessageText))))
         |> TaskOption.map (fun m ->
-          { Id = m.MessageId
+          {
+            Id = m.MessageId
             PopReceipt = m.PopReceipt
-            Body = m.MessageText })
+            Body = m.MessageText
+          })
 
       member this.GetInputMsgClient(id, popReceipt) =
         InputMsgClient(queue, id, popReceipt) :> IInputMsgClient
@@ -44,10 +46,14 @@ module Queue =
     interface IOutputQueue with
       member this.SendSuccessMessage(name: string) =
         let message: BaseMessage<ConversionResultMessage> =
-          { Context = context
+          {
+            Context = context
             Data =
-              { Id = conversionId
-                Result = ConversionResult.Success { Name = name } } }
+              {
+                Id = conversionId
+                Result = ConversionResult.Success { Name = name }
+              }
+          }
 
         logger.LogInformation "Sending successful conversion result message"
 
@@ -55,10 +61,14 @@ module Queue =
 
       member this.SendFailureMessage() =
         let message: BaseMessage<ConversionResultMessage> =
-          { Context = context
+          {
+            Context = context
             Data =
-              { Id = conversionId
-                Result = ConversionResult.Error { Error = "Error during conversion!" } } }
+              {
+                Id = conversionId
+                Result = ConversionResult.Error { Error = "Error during conversion!" }
+              }
+          }
 
         logger.LogInformation "Sending conversion result error message"
 

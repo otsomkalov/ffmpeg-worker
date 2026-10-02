@@ -5,8 +5,10 @@ type StorageSettings' = { Queue: string; Container: string }
 
 [<CLIMutable>]
 type StorageSettings =
-  { ConnectionString: string
+  {
+    ConnectionString: string
     Input: StorageSettings'
-    Output: StorageSettings' }
+    Output: StorageSettings'
+  }
 
   static member SectionName = "Storage"

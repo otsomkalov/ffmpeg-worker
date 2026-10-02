@@ -5,9 +5,11 @@ open System.Threading.Tasks
 
 module Repos =
   type QueueMessage =
-    { Id: string
+    {
+      Id: string
       PopReceipt: string
-      Body: string }
+      Body: string
+    }
 
   type IInputMsgClient =
     abstract Delete: unit -> Task<unit>
