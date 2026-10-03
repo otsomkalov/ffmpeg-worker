@@ -27,9 +27,11 @@ module Queue =
           |> Option.bind (
             Seq.tryHead
             >> Option.map (fun m ->
-              { Id = m.MessageId
+              {
+                Id = m.MessageId
                 PopReceipt = m.ReceiptHandle
-                Body = m.Body })
+                Body = m.Body
+              })
           )
       }
 
@@ -40,10 +42,14 @@ module Queue =
     interface IOutputQueue with
       member this.SendSuccessMessage(name) = task {
         let message: BaseMessage<ConversionResultMessage> =
-          { Context = operationId
+          {
+            Context = operationId
             Data =
-              { Id = conversionId
-                Result = ConversionResult.Success { Name = name } } }
+              {
+                Id = conversionId
+                Result = ConversionResult.Success { Name = name }
+              }
+          }
 
         logger.LogInformation "Sending successful conversion result message"
 
@@ -54,10 +60,14 @@ module Queue =
 
       member this.SendFailureMessage() = task {
         let message: BaseMessage<ConversionResultMessage> =
-          { Context = operationId
+          {
+            Context = operationId
             Data =
-              { Id = conversionId
-                Result = ConversionResult.Error { Error = "Error during conversion!" } } }
+              {
+                Id = conversionId
+                Result = ConversionResult.Error { Error = "Error during conversion!" }
+              }
+          }
 
         logger.LogInformation "Sending conversion result error message"
 
