@@ -16,28 +16,28 @@ stages:
   - stage: build
     displayName: 'Build'
     jobs:
-      - task: DotNetCoreCLI@2
-          displayName: "Install NBGV"
-          inputs:
-            command: 'custom'
-            custom: 'tool'
-            arguments: 'install -g nbgv'
-
-      - task: Bash@3
-        name: setVersion
-        displayName: "Set NBGV Cloud Variables"
-        inputs:
-          targetType: 'inline'
-          script: |
-            nbgv cloud -c
-      - job: restore
-        displayName: 'Restore'
+      - job: init
+        displayName: 'Init'
         steps:
+          - checkout: self
+            fetchDepth: 0
           - task: UseDotNet@2
             inputs:
               useGlobalJson: true
           - task: DotNetCoreCLI@2
-            name: Install_Fantomas
+            displayName: "Install NBGV"
+            inputs:
+              command: 'custom'
+              custom: 'tool'
+              arguments: 'install -g nbgv'
+          - task: Bash@3
+            displayName: "Set NBGV Cloud Variables"
+            inputs:
+              targetType: 'inline'
+              script: |
+                nbgv cloud -c
+              workingDirectory: '$(Build.SourcesDirectory)'
+          - task: DotNetCoreCLI@2
             inputs:
               command: 'custom'
               custom: 'tool'
@@ -67,8 +67,10 @@ stages:
               summaryFileLocation: '$(Agent.TempDirectory)/*.cobertura.xml'
       - job: build_azure
         displayName: 'Build Azure'
-        dependsOn: restore
+        dependsOn: init
         steps:
+          - checkout: self
+            fetchDepth: 0
           - task: UseDotNet@2
             inputs:
               useGlobalJson: true
@@ -94,8 +96,10 @@ stages:
               ArtifactName: 'az'
       - job: build_aws
         displayName: 'Build AWS'
-        dependsOn: restore
+        dependsOn: init
         steps:
+          - checkout: self
+            fetchDepth: 0
           - task: UseDotNet@2
             inputs:
               useGlobalJson: true
@@ -122,6 +126,8 @@ stages:
   - stage: publish_dev
     displayName: 'Publish DEV images'
     trigger: manual
+    variables:
+      tag: $[ replace(variables['Build.BuildNumber'], '+', '-') ]
     jobs:
       - deployment: publish_dev_azure
         displayName: 'Publish Azure DEV images'
@@ -141,7 +147,7 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/az/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      $(NBGV_SemVer2)-az-alpha
+                      az-$(tag)
                       az-nightly
       - deployment: publish_dev_aws
         displayName: 'Publish AWS DEV images'
@@ -161,11 +167,12 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/aws/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      $(NBGV_SemVer2)-aws-alpha
+                      aws-$(tag)
                       aws-nightly
   - stage: publish_prd
     displayName: 'Publish PRD images'
     trigger: manual
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     jobs:
       - deployment: publish_prd_azure
         displayName: 'Publish Azure PRD images'
@@ -185,7 +192,7 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/az/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      $(NBGV_SemVer2)-az
+                      az-$(Build.BuildNumber)
                       az-stable
       - deployment: publish_prd_aws
         displayName: 'Publish AWS PRD images'
@@ -205,5 +212,5 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/aws/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      $(NBGV_SemVer2)-aws
+                      aws-$(Build.BuildNumber)
                       aws-stable
