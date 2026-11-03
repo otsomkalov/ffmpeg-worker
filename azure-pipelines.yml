@@ -10,15 +10,26 @@ pr:
 
 variables:
   Runtime: 'linux-musl-x64'
-  ProjectVersion: '0.0'
-  BuildNumber: '$(Build.BuildId)'
-  VersionNumber: '$(projectVersion).$(buildNumber)'
   Configuration: 'Release'
 
 stages:
   - stage: build
     displayName: 'Build'
     jobs:
+      - task: DotNetCoreCLI@2
+          displayName: "Install NBGV"
+          inputs:
+            command: 'custom'
+            custom: 'tool'
+            arguments: 'install -g nbgv'
+
+      - task: Bash@3
+        name: setVersion
+        displayName: "Set NBGV Cloud Variables"
+        inputs:
+          targetType: 'inline'
+          script: |
+            nbgv cloud -c
       - job: restore
         displayName: 'Restore'
         steps:
@@ -73,7 +84,7 @@ stages:
             inputs:
               command: 'publish'
               projects: 'src/**/Worker.fsproj'
-              arguments: '-r $(Runtime) --configuration $(Configuration) --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)/az -p:DefineConstants=AZ'
+              arguments: '-r $(Runtime) --configuration $(Configuration) --sc -p:PublishSingleFile=true -o $(Build.ArtifactStagingDirectory)/az -p:DefineConstants=AZ'
               publishWebProjects: false
               zipAfterPublish: false
           - task: PublishBuildArtifacts@1
@@ -100,7 +111,7 @@ stages:
             inputs:
               command: 'publish'
               projects: 'src/**/Worker.fsproj'
-              arguments: '-r $(Runtime) --configuration $(Configuration) --sc -p:PublishSingleFile=true -p:Version="$(VersionNumber)" -o $(Build.ArtifactStagingDirectory)/aws -p:DefineConstants=AWS'
+              arguments: '-r $(Runtime) --configuration $(Configuration) --sc -p:PublishSingleFile=true -o $(Build.ArtifactStagingDirectory)/aws -p:DefineConstants=AWS'
               publishWebProjects: false
               zipAfterPublish: false
           - task: PublishBuildArtifacts@1
@@ -130,7 +141,7 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/az/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      0.0.$(Build.BuildId)-az-alpha
+                      $(NBGV_SemVer2)-az-alpha
                       az-nightly
       - deployment: publish_dev_aws
         displayName: 'Publish AWS DEV images'
@@ -150,7 +161,7 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/aws/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      0.0.$(Build.BuildId)-aws-alpha
+                      $(NBGV_SemVer2)-aws-alpha
                       aws-nightly
   - stage: publish_prd
     displayName: 'Publish PRD images'
@@ -174,7 +185,7 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/az/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      0.0.$(Build.BuildId)-az
+                      $(NBGV_SemVer2)-az
                       az-stable
       - deployment: publish_prd_aws
         displayName: 'Publish AWS PRD images'
@@ -194,5 +205,5 @@ stages:
                     dockerfile: "$(Pipeline.Workspace)/aws/Worker/Dockerfile"
                     containerRegistry: $(registry)
                     tags: |
-                      0.0.$(Build.BuildId)-aws
+                      $(NBGV_SemVer2)-aws
                       aws-stable
